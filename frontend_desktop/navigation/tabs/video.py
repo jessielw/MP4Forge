@@ -1,6 +1,8 @@
 from collections.abc import Sequence
+from dataclasses import dataclass
 from pathlib import Path
 
+from iso639 import Language
 from pymediainfo import MediaInfo
 from PySide6.QtCore import QSize, Qt, QTimer, Slot
 from PySide6.QtWidgets import (
@@ -20,13 +22,22 @@ from typing_extensions import override
 from core.utils.language import get_full_language_str
 from core.utils.mediainfo import get_media_info
 from frontend_desktop.global_signals import GSigs
-from frontend_desktop.navigation.tabs.base import BaseTab
-from frontend_desktop.navigation.tabs.state import VideoTabState
+from frontend_desktop.navigation.tabs.base import BaseTab, BaseTabState
 from frontend_desktop.utils.general_worker import GeneralWorker
 from frontend_desktop.widgets.dnd_factory import DNDLineEdit, DNDPushButton
 from frontend_desktop.widgets.lang_combo import get_language_combo_box
 from frontend_desktop.widgets.qtawesome_theme_swapper import QTAThemeSwap
 from frontend_desktop.widgets.utils import cancel_scroll_event
+
+
+@dataclass(frozen=True, slots=True)
+class VideoTabState(BaseTabState):
+    """Data structure for exporting the state of the Video tab."""
+
+    input_file: Path
+    language: Language | None
+    title: str
+    delay_ms: int
 
 
 class VideoTab(BaseTab[VideoTabState]):

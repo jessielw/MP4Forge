@@ -1,8 +1,17 @@
+from dataclasses import asdict, dataclass
 from typing import Generic, TypeVar
 
 from PySide6.QtWidgets import QWidget
 
-from frontend_desktop.navigation.tabs.state import BaseTabState
+
+@dataclass(frozen=True, slots=True)
+class BaseTabState:
+    """Base data structure for exporting tab states."""
+
+    def to_dict(self) -> dict:
+        """Converts the tab state to a dictionary."""
+        return asdict(self)
+
 
 TState = TypeVar("TState", bound=BaseTabState)
 
