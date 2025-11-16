@@ -24,7 +24,7 @@ class VideoTab(BaseTab[VideoTabState]):
     """Tab for video file input and settings."""
 
     def __init__(self, parent=None) -> None:
-        super().__init__(parent)
+        super().__init__(parent=parent)
         self.setObjectName("VideoTab")
         self.main_layout.setContentsMargins(0, 0, 0, 0)
         self.main_layout.addStretch()
