@@ -1,3 +1,5 @@
+from collections.abc import Callable
+
 import qtawesome as qta
 from PySide6.QtCore import QEvent, Qt
 from PySide6.QtWidgets import QApplication, QTabBar, QTabWidget, QVBoxLayout, QWidget
@@ -23,6 +25,7 @@ class MultiTabbedTabWidget(QWidget):
         widget_class: type[QWidget] | None = None,
         tab_name: str = "Tab",
         initial_count: int = 1,
+        add_widget_cb: Callable[[QWidget], None] | None = None,
     ):
         """
         Args:
@@ -30,6 +33,7 @@ class MultiTabbedTabWidget(QWidget):
             widget_class: Class to instantiate for each tab tab
             tab_name: Display name for tabs
             initial_count: Number of initial tab tabs to create
+            add_widget_cb: Optional callback called with each newly created tab widget
         """
         super().__init__(parent)
         self.setObjectName("MultiTabbedTabWidget")
@@ -37,6 +41,9 @@ class MultiTabbedTabWidget(QWidget):
         self._plus_tab_idx = -1
         self.widget_class = widget_class or QWidget
         self.tab_name = tab_name
+
+        # callback for newly created widgets
+        self._add_widget_cb = add_widget_cb
 
         # create tab widget
         self.tabs = QTabWidget(self, tabsClosable=True, movable=True)
@@ -80,6 +87,10 @@ class MultiTabbedTabWidget(QWidget):
             The newly created tab widget
         """
         tab_widget = self.widget_class(self)
+
+        # call the callback if provided
+        if self._add_widget_cb:
+            self._add_widget_cb(tab_widget)
 
         # insert before the plus tab
         idx = self._plus_tab_idx if self._plus_tab_idx >= 0 else self.tabs.count()
