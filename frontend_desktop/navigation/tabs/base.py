@@ -43,8 +43,17 @@ TState = TypeVar("TState", bound=BaseTabState)
 class BaseTab(QWidget, Generic[TState]):
     """Base class for all tabs."""
 
-    def __init__(self, parent=None) -> None:
+    def __init__(
+        self,
+        file_dialog_filters: str = "Media Files (*)",
+        dnd_extensions: tuple[str, ...] = ("*",),
+        parent=None,
+    ) -> None:
         super().__init__(parent)
+
+        # instance variables for file filtering (subclasses can override)
+        self._file_dialog_filter = file_dialog_filters
+        self._dnd_extensions = dnd_extensions
 
         # media info worker
         self._media_info_worker: GeneralWorker | None = None
@@ -64,9 +73,7 @@ class BaseTab(QWidget, Generic[TState]):
         self.input_entry.setPlaceholderText(self.input_entry.toolTip())
 
         # enable drag and drop for input widgets
-        for dnd_widget in (self.open_file_btn, self.input_entry):
-            dnd_widget.set_extensions(("*",))
-            dnd_widget.dropped.connect(self._handle_dropped_file)
+        self._configure_file_filters()
 
         # timer for resetting UI after another click
         self._reset_timer = QTimer(self, interval=3000)
@@ -118,6 +125,29 @@ class BaseTab(QWidget, Generic[TState]):
         self.main_layout.addWidget(self.delay_spinbox)
         self.main_layout.addWidget(self.media_info_tree_lbl)
         self.main_layout.addWidget(self.media_info_tree, stretch=1)
+
+    def _configure_file_filters(self) -> None:
+        """Configure file filters for drag-and-drop and file dialog."""
+        for dnd_widget in (self.open_file_btn, self.input_entry):
+            dnd_widget.set_extensions(self._dnd_extensions)
+            dnd_widget.dropped.connect(self._handle_dropped_file)
+
+    def set_file_filters(
+        self, dialog_filter: str, dnd_extensions: tuple[str, ...]
+    ) -> None:
+        """
+        Update file filters for this tab.
+
+        Args:
+            dialog_filter: Filter string for QFileDialog (e.g., "Video Files (*.mp4 *.mkv)")
+            dnd_extensions: Tuple of extensions for drag-and-drop (e.g., (".mp4", ".mkv"))
+        """
+        self._file_dialog_filter = dialog_filter
+        self._dnd_extensions = dnd_extensions
+
+        # update existing widgets
+        for dnd_widget in (self.open_file_btn, self.input_entry):
+            dnd_widget.set_extensions(dnd_extensions)
 
     @Slot(list)
     def _handle_dropped_file(self, file_paths: Sequence[str]) -> None:
@@ -194,7 +224,7 @@ class BaseTab(QWidget, Generic[TState]):
             self,
             "Select Media File",
             "",
-            "Media Files (*)",
+            self._file_dialog_filter,
         )
         if file_path:
             self._handle_dropped_file((file_path,))
