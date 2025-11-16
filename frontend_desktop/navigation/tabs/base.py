@@ -86,20 +86,20 @@ class BaseTab(QWidget, Generic[TState]):
         row_1_layout.addWidget(self.reset_tab_btn)
 
         # language selection
-        lang_lbl = QLabel("Language", self)
+        self.lang_lbl = QLabel("Language", self)
         self.lang_combo = get_language_combo_box(self)
 
         # title entry
-        title_lbl = QLabel("Title", self)
+        self.title_lbl = QLabel("Title", self)
         self.title_entry = QLineEdit(self, placeholderText="Enter title...")
 
         # delay entry
-        delay_lbl = QLabel("Delay (ms)", self)
+        self.delay_lbl = QLabel("Delay (ms)", self)
         self.delay_spinbox = QSpinBox(self, minimum=-999999, maximum=999999, value=0)
         self.delay_spinbox.wheelEvent = cancel_scroll_event
 
         # media info tree
-        media_info_tree_lbl = QLabel("MediaInfo", self)
+        self.media_info_tree_lbl = QLabel("MediaInfo", self)
         self.media_info_tree = QTreeWidget(self, columnCount=2)
         self.media_info_tree.setFrameShape(QFrame.Shape.Box)
         self.media_info_tree.setFrameShadow(QFrame.Shadow.Sunken)
@@ -110,13 +110,13 @@ class BaseTab(QWidget, Generic[TState]):
         # main layout
         self.main_layout = QVBoxLayout(self)
         self.main_layout.addLayout(row_1_layout)
-        self.main_layout.addWidget(lang_lbl)
+        self.main_layout.addWidget(self.lang_lbl)
         self.main_layout.addWidget(self.lang_combo)
-        self.main_layout.addWidget(title_lbl)
+        self.main_layout.addWidget(self.title_lbl)
         self.main_layout.addWidget(self.title_entry)
-        self.main_layout.addWidget(delay_lbl)
+        self.main_layout.addWidget(self.delay_lbl)
         self.main_layout.addWidget(self.delay_spinbox)
-        self.main_layout.addWidget(media_info_tree_lbl)
+        self.main_layout.addWidget(self.media_info_tree_lbl)
         self.main_layout.addWidget(self.media_info_tree, stretch=1)
 
     @Slot(list)
