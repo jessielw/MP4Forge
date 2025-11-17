@@ -24,7 +24,22 @@ class AudioTabState(BaseTabState):
 
 class AudioTab(BaseTab[AudioTabState]):
     def __init__(self, parent=None):
-        super().__init__(parent=parent)
+        super().__init__(
+            file_dialog_filters="Audio Files (.ac3 .aac .mp4 .m4a .mp2 .mp3 .opus .ogg .eac3 .ec3)",
+            dnd_extensions=(
+                ".ac3",
+                ".aac",
+                ".mp4",
+                ".m4a",
+                ".mp2",
+                ".mp3",
+                ".opus",
+                ".ogg",
+                ".eac3",
+                ".ec3",
+            ),
+            parent=parent,
+        )
         self.setObjectName("AudioTab")
 
     @override
