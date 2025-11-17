@@ -3,10 +3,13 @@ from pathlib import Path
 
 from iso639 import Language
 from pymediainfo import MediaInfo
+from PySide6.QtCore import Slot
 from PySide6.QtWidgets import QTreeWidgetItem
 from typing_extensions import override
 
+from core.utils.autoqpf import auto_gen_chapters
 from core.utils.language import get_full_language_str
+from frontend_desktop.global_signals import GSigs
 from frontend_desktop.navigation.tabs.base import BaseTab, BaseTabState
 
 
@@ -24,10 +27,35 @@ class VideoTab(BaseTab[VideoTabState]):
     """Tab for video file input and settings."""
 
     def __init__(self, parent=None) -> None:
-        super().__init__(parent=parent)
+        super().__init__(
+            file_dialog_filters="Video Files (.avi .mp4 .m1v .m2v .m4v .264 .h264 .hevc .h265 .avc)",
+            dnd_extensions=(
+                ".avi",
+                ".mp4",
+                ".m1v",
+                ".m2v",
+                ".m4v",
+                ".264",
+                ".h264",
+                ".hevc",
+                ".h265",
+                ".avc",
+            ),
+            parent=parent,
+        )
         self.setObjectName("VideoTab")
         self.main_layout.setContentsMargins(0, 0, 0, 0)
         self.main_layout.addStretch()
+
+    @override
+    @Slot(tuple)
+    def _on_media_info_finished(self, result: tuple[MediaInfo, Path]) -> None:
+        media_info, file_path = result
+        chapters = auto_gen_chapters(media_info)
+        if chapters:
+            GSigs().chapters_updated.emit(chapters)
+        self._update_ui(media_info, file_path)
+        self._parse_file_done()
 
     @override
     def _load_language(self, media_info: MediaInfo) -> None:
