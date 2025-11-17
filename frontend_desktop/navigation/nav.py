@@ -10,11 +10,11 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from frontend_desktop.navigation.tabs.audio import AudioTab
+from frontend_desktop.navigation.tabs.audio import MultiAudioTab
 from frontend_desktop.navigation.tabs.chapters import ChapterTab
 from frontend_desktop.navigation.tabs.output import OutputTab
 from frontend_desktop.navigation.tabs.settings import SettingsTab
-from frontend_desktop.navigation.tabs.subtitles import SubtitlesTab
+from frontend_desktop.navigation.tabs.subtitles import MultiSubtitleTab
 from frontend_desktop.navigation.tabs.video import VideoTab
 from frontend_desktop.widgets.qtawesome_theme_swapper import QTAThemeSwap
 from frontend_desktop.widgets.utils import build_h_line
@@ -42,8 +42,10 @@ class Tabs(Enum):
         """Returns the tab display name, icon name, and associated widget class."""
         specs = {
             Tabs.Video: TabData("Video", "mdi.video-outline", VideoTab),
-            Tabs.Audio: TabData("Audio", "mdi.music-note", AudioTab),
-            Tabs.Subtitles: TabData("Subtitles", "mdi.card-text-outline", SubtitlesTab),
+            Tabs.Audio: TabData("Audio", "mdi.music-note", MultiAudioTab),
+            Tabs.Subtitles: TabData(
+                "Subtitles", "mdi.card-text-outline", MultiSubtitleTab
+            ),
             Tabs.Chapters: TabData(
                 "Chapters", "mdi.bookmark-minus-outline", ChapterTab
             ),
