@@ -102,6 +102,6 @@ class NavigationTabs(QWidget):
         btn.setCheckable(checkable)
         btn.setText(text)
         btn.setCursor(Qt.CursorShape.PointingHandCursor)
-        QTAThemeSwap().register(btn, icon_name, icon_size=QSize(35, 35))
+        QTAThemeSwap().register(btn, icon_name, icon_size=QSize(32, 32))
         btn.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
         return btn
