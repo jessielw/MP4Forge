@@ -15,17 +15,16 @@ def get_language_combo_box(parent: QWidget | None = None) -> CustomComboBox:
 
     if not _languages_cache:
         for lang in iso639.ALL_LANGUAGES:
-            lang_code = (lang.part3 or lang.part2t or lang.part2b or lang.part1) or None
             name = lang.name
-            if name and lang_code:
-                _languages_cache.append((lang_code, name))
+            if name:
+                _languages_cache.append((lang, name))
 
         # sort by language name
         _languages_cache.sort(key=lambda x: x[1])
 
     # update combo box
     lang_combo.addItem("", None)
-    for lang in _languages_cache:
-        lang_combo.addItem(lang[1], lang[0])
+    for lang_obj, lang_name in _languages_cache:
+        lang_combo.addItem(lang_name, lang_obj)
 
     return lang_combo
