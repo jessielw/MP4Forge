@@ -1,31 +1,20 @@
 import re
-from dataclasses import dataclass
 from pathlib import Path
 
-from iso639 import Language
 from pymediainfo import MediaInfo
-from PySide6.QtWidgets import QTreeWidgetItem, QVBoxLayout, QWidget
+from PySide6.QtWidgets import QMessageBox, QTreeWidgetItem, QVBoxLayout, QWidget
 from typing_extensions import override
 
+from core.job_states import AudioState
 from core.utils.language import get_full_language_str
-from frontend_desktop.navigation.tabs.base import BaseTab, BaseTabState
+from frontend_desktop.navigation.tabs.base import BaseTab
 from frontend_desktop.widgets.multi_tabbed_widget import MultiTabbedTabWidget
 
 
-@dataclass(frozen=True, slots=True)
-class AudioTabState(BaseTabState):
-    """Data structure for exporting the state of the Audio tab."""
-
-    input_file: Path
-    language: Language | None
-    title: str
-    delay_ms: int
-
-
-class AudioTab(BaseTab[AudioTabState]):
+class AudioTab(BaseTab[AudioState]):
     def __init__(self, parent=None):
         super().__init__(
-            file_dialog_filters="Audio Files (.ac3 .aac .mp4 .m4a .mp2 .mp3 .opus .ogg .eac3 .ec3)",
+            file_dialog_filters="Audio Files (*.ac3 *.aac *.mp4 *.m4a *.mp2 *.mp3 *.opus *.ogg *.eac3 *.ec3)",
             dnd_extensions=(
                 ".ac3",
                 ".aac",
@@ -72,6 +61,12 @@ class AudioTab(BaseTab[AudioTabState]):
             no_item = QTreeWidgetItem(self.media_info_tree)
             no_item.setText(0, "No audio track found")
             no_item.setText(1, "")
+            QMessageBox.warning(
+                self,
+                "No Audio Track Found",
+                "The selected file does not contain any audio tracks.",
+            )
+            self.reset_tab()
             return
 
         track = media_info.audio_tracks[0]
@@ -110,13 +105,17 @@ class AudioTab(BaseTab[AudioTabState]):
         self.delay_spinbox.setValue(delay)
 
     @override
-    def export_state(self) -> AudioTabState:
+    def export_state(self) -> AudioState | None:
         """Exports the current state."""
-        return AudioTabState(
-            input_file=Path(self.input_entry.text().strip()),
-            language=self.lang_combo.currentData(),
-            title=self.title_entry.text().strip(),
-            delay_ms=self.delay_spinbox.value(),
+        return (
+            AudioState(
+                input_file=Path(self.input_entry.text().strip()),
+                language=self.lang_combo.currentData(),
+                title=self.title_entry.text().strip(),
+                delay_ms=self.delay_spinbox.value(),
+            )
+            if self.is_tab_ready()
+            else None
         )
 
     @override
@@ -138,20 +137,21 @@ class MultiAudioTab(QWidget):
         layout.setContentsMargins(0, 0, 0, 0)
         layout.addWidget(self.multi_track)
 
-    def export_all_audio_states(self) -> list[AudioTabState]:
+    def export_all_audio_states(self) -> list[AudioState]:
         """Export states from all audio track tabs."""
         states = []
         for widget in self.multi_track.get_all_tab_widgets():
-            if hasattr(widget, "export_state"):
-                states.append(getattr(widget, "export_state")())
+            export_state = getattr(widget, "export_state", None)
+            if export_state:
+                states.append(export_state())
         return states
 
     def are_all_tabs_ready(self) -> bool:
         """Check if all audio track tabs are ready."""
         for widget in self.multi_track.get_all_tab_widgets():
-            if hasattr(widget, "is_tab_ready"):
-                if not getattr(widget, "is_tab_ready")():
-                    return False
+            is_tab_ready = getattr(widget, "is_tab_ready", None)
+            if is_tab_ready and not is_tab_ready():
+                return False
         return True
 
     def reset_all_tabs(self) -> None:
