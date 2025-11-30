@@ -1,5 +1,4 @@
 from collections.abc import Sequence
-from dataclasses import dataclass
 from pathlib import Path
 
 from pymediainfo import MediaInfo
@@ -7,20 +6,14 @@ from PySide6.QtCore import Slot
 from PySide6.QtWidgets import QLabel
 from typing_extensions import override
 
+from core.job_states import ChapterState
 from core.utils.autoqpf import auto_gen_chapters
 from frontend_desktop.global_signals import GSigs
-from frontend_desktop.navigation.tabs.base import BaseTab, BaseTabState
+from frontend_desktop.navigation.tabs.base import BaseTab
 from frontend_desktop.widgets.basic_code_editor import CodeEditor
 
 
-@dataclass(frozen=True, slots=True)
-class ChapterTabState(BaseTabState):
-    """Data structure for exporting the state of the Audio tab."""
-
-    chapters: str | None
-
-
-class ChapterTab(BaseTab[ChapterTabState]):
+class ChapterTab(BaseTab[ChapterState]):
     def __init__(self, parent=None):
         super().__init__(
             file_dialog_filters="Text Files (*.txt);;All Files (*)",
@@ -108,10 +101,16 @@ class ChapterTab(BaseTab[ChapterTabState]):
         pass
 
     @override
-    def export_state(self) -> ChapterTabState:
-        """Exports the current state of the tab as a VideoTabState."""
-        state = ChapterTabState(chapters=self.editor.toPlainText() or None)
-        return state
+    def export_state(self) -> ChapterState | None:
+        """Exports the current state of the tab as a ChapterState."""
+        txt = self.editor.toPlainText()
+        return (
+            ChapterState(
+                chapters=txt,
+            )
+            if txt
+            else None
+        )
 
     @override
     def is_tab_ready(self) -> bool:
