@@ -1,34 +1,23 @@
-from dataclasses import dataclass
 from pathlib import Path
 
-from iso639 import Language
 from pymediainfo import MediaInfo
 from PySide6.QtCore import Slot
 from PySide6.QtWidgets import QTreeWidgetItem
 from typing_extensions import override
 
+from core.job_states import VideoState
 from core.utils.autoqpf import auto_gen_chapters
 from core.utils.language import get_full_language_str
 from frontend_desktop.global_signals import GSigs
-from frontend_desktop.navigation.tabs.base import BaseTab, BaseTabState
+from frontend_desktop.navigation.tabs.base import BaseTab
 
 
-@dataclass(frozen=True, slots=True)
-class VideoTabState(BaseTabState):
-    """Data structure for exporting the state of the Video tab."""
-
-    input_file: Path
-    language: Language | None
-    title: str
-    delay_ms: int
-
-
-class VideoTab(BaseTab[VideoTabState]):
+class VideoTab(BaseTab[VideoState]):
     """Tab for video file input and settings."""
 
     def __init__(self, parent=None) -> None:
         super().__init__(
-            file_dialog_filters="Video Files (.avi .mp4 .m1v .m2v .m4v .264 .h264 .hevc .h265 .avc)",
+            file_dialog_filters="Video Files (*.avi *.mp4 *.m1v *.m2v *.m4v *.264 *.h264 *.hevc *.h265 *.avc)",
             dnd_extensions=(
                 ".avi",
                 ".mp4",
@@ -51,9 +40,13 @@ class VideoTab(BaseTab[VideoTabState]):
     @Slot(tuple)
     def _on_media_info_finished(self, result: tuple[MediaInfo, Path]) -> None:
         media_info, file_path = result
-        chapters = auto_gen_chapters(media_info)
-        if chapters:
-            GSigs().chapters_updated.emit(chapters)
+        # we will attempt to extract chapters if they exist, ignoring any errors silently
+        try:
+            chapters = auto_gen_chapters(media_info)
+            if chapters:
+                GSigs().chapters_updated.emit(chapters)
+        except Exception:
+            pass
         self._update_ui(media_info, file_path)
         self._parse_file_done()
 
@@ -116,15 +109,18 @@ class VideoTab(BaseTab[VideoTabState]):
         self.delay_spinbox.setValue(delay)
 
     @override
-    def export_state(self) -> VideoTabState:
-        """Exports the current state of the tab as a VideoTabState."""
-        state = VideoTabState(
-            input_file=Path(self.input_entry.text().strip()),
-            language=self.lang_combo.currentData(),
-            title=self.title_entry.text().strip(),
-            delay_ms=self.delay_spinbox.value(),
+    def export_state(self) -> VideoState | None:
+        """Exports the current state of the tab as a VideoState."""
+        return (
+            VideoState(
+                input_file=Path(self.input_entry.text().strip()),
+                language=self.lang_combo.currentData(),
+                title=self.title_entry.text().strip(),
+                delay_ms=self.delay_spinbox.value(),
+            )
+            if self.is_tab_ready()
+            else None
         )
-        return state
 
     @override
     def is_tab_ready(self) -> bool:
