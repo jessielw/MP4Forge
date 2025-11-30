@@ -1,8 +1,7 @@
 from abc import abstractmethod
 from collections.abc import Sequence
-from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Generic, TypeVar
+from typing import Generic, Protocol, TypeVar
 
 from pymediainfo import MediaInfo
 from PySide6.QtCore import QSize, Qt, QTimer, Slot
@@ -28,16 +27,15 @@ from frontend_desktop.widgets.qtawesome_theme_swapper import QTAThemeSwap
 from frontend_desktop.widgets.utils import cancel_scroll_event
 
 
-@dataclass(frozen=True, slots=True)
-class BaseTabState:
-    """Base data structure for exporting tab states."""
+class TabState(Protocol):
+    """Protocol for tab state objects (duck typing)."""
 
     def to_dict(self) -> dict:
-        """Converts the tab state to a dictionary."""
-        return asdict(self)
+        """Convert state to dictionary."""
+        ...
 
 
-TState = TypeVar("TState", bound=BaseTabState)
+TState = TypeVar("TState", bound=TabState)
 
 
 class BaseTab(QWidget, Generic[TState]):
@@ -255,7 +253,7 @@ class BaseTab(QWidget, Generic[TState]):
         raise NotImplementedError("is_tab_ready must be implemented by subclasses.")
 
     @abstractmethod
-    def export_state(self) -> TState:
+    def export_state(self) -> TState | None:
         """Exports the current state of the tab as a BaseTabState (concrete subtype)."""
         raise NotImplementedError("export_state must be implemented by subclasses.")
 
