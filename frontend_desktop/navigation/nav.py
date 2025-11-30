@@ -1,6 +1,3 @@
-from enum import Enum, auto
-from typing import NamedTuple
-
 from PySide6.QtCore import QSize, Qt, Signal
 from PySide6.QtWidgets import (
     QButtonGroup,
@@ -10,49 +7,11 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from frontend_desktop.navigation.tabs.audio import MultiAudioTab
-from frontend_desktop.navigation.tabs.chapters import ChapterTab
-from frontend_desktop.navigation.tabs.output import OutputTab
 from frontend_desktop.navigation.tabs.settings import SettingsTab
-from frontend_desktop.navigation.tabs.subtitles import MultiSubtitleTab
-from frontend_desktop.navigation.tabs.video import VideoTab
+from frontend_desktop.tab_registry import get_tab_widget_class
+from frontend_desktop.types.nav import Tabs
 from frontend_desktop.widgets.qtawesome_theme_swapper import QTAThemeSwap
 from frontend_desktop.widgets.utils import build_h_line
-
-
-class TabData(NamedTuple):
-    """Data structure for tab information."""
-
-    name: str
-    icon: str
-    widget_class: type[QWidget]
-
-
-class Tabs(Enum):
-    """Enumeration of the different tabs in the application."""
-
-    Video = auto()
-    Audio = auto()
-    Subtitles = auto()
-    Chapters = auto()
-    Output = auto()
-    Settings = auto()
-
-    def get_tab_info(self) -> TabData:
-        """Returns the tab display name, icon name, and associated widget class."""
-        specs = {
-            Tabs.Video: TabData("Video", "mdi.video-outline", VideoTab),
-            Tabs.Audio: TabData("Audio", "mdi.music-note", MultiAudioTab),
-            Tabs.Subtitles: TabData(
-                "Subtitles", "mdi.card-text-outline", MultiSubtitleTab
-            ),
-            Tabs.Chapters: TabData(
-                "Chapters", "mdi.bookmark-minus-outline", ChapterTab
-            ),
-            Tabs.Output: TabData("Output", "mdi.page-next-outline", OutputTab),
-            Tabs.Settings: TabData("Settings", "mdi.cog-outline", SettingsTab),
-        }
-        return specs[self]
 
 
 class NavigationTabs(QWidget):
@@ -73,11 +32,12 @@ class NavigationTabs(QWidget):
 
         # loop tabs and build out widgets
         for tab in Tabs:
-            text, icon_name, WidgetClass = tab.get_tab_info()
-            btn = self._build_tab_btn(text, icon_name, True)
+            info = tab.get_info()
+            btn = self._build_tab_btn(info.name, info.icon, True)
 
             # separate Settings visually
-            if WidgetClass is SettingsTab:
+            widget_class = get_tab_widget_class(tab)
+            if widget_class is SettingsTab:
                 self.main_layout.addStretch()
                 self.main_layout.addSpacing(8)
                 self.main_layout.addWidget(build_h_line((1, 1, 1, 1)))
