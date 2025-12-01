@@ -88,13 +88,14 @@ class AudioTab(BaseTab[AudioState]):
         """
         delay = 0
 
-        # Try parsing delay from filename first (common pattern: DELAY 100ms or similar)
+        # try parsing delay from filename first (common pattern: DELAY 100ms or similar)
+        # TODO: later only load delay from elementary streams
         filename = file_path.stem
         delay_match = re.search(r"DELAY[_\s]+(-?\d+)ms", filename, re.IGNORECASE)
         if delay_match:
             delay = int(delay_match.group(1))
         elif media_info.audio_tracks:
-            # Fallback to mediainfo
+            # fallback to mediainfo
             src_delay = media_info.audio_tracks[0].source_delay
             reg_delay = media_info.audio_tracks[0].delay
             if src_delay is not None:
@@ -138,21 +139,15 @@ class MultiAudioTab(QWidget):
         layout.addWidget(self.multi_track)
 
     def export_all_audio_states(self) -> list[AudioState]:
-        """Export states from all audio track tabs."""
+        """Export states from all audio track tabs (only tabs with input files)."""
         states = []
         for widget in self.multi_track.get_all_tab_widgets():
             export_state = getattr(widget, "export_state", None)
             if export_state:
-                states.append(export_state())
+                state = export_state()
+                if state:  # only include tabs with actual input
+                    states.append(state)
         return states
-
-    def are_all_tabs_ready(self) -> bool:
-        """Check if all audio track tabs are ready."""
-        for widget in self.multi_track.get_all_tab_widgets():
-            is_tab_ready = getattr(widget, "is_tab_ready", None)
-            if is_tab_ready and not is_tab_ready():
-                return False
-        return True
 
     def reset_all_tabs(self) -> None:
         """Reset all tab widgets to default state."""
