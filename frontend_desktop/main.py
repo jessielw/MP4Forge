@@ -1,7 +1,7 @@
 import sys
 import traceback
 
-from PySide6.QtCore import QtMsgType, Slot
+from PySide6.QtCore import QtMsgType, Slot, qInstallMessageHandler
 from PySide6.QtWidgets import (
     QApplication,
     QHBoxLayout,
@@ -10,10 +10,12 @@ from PySide6.QtWidgets import (
     QStatusBar,
     QWidget,
 )
-from qtpy.QtCore import qInstallMessageHandler
 
 from frontend_desktop.global_signals import GSigs
-from frontend_desktop.navigation.nav import NavigationTabs, Tabs
+from frontend_desktop.navigation.nav import NavigationTabs
+from frontend_desktop.navigation.tabs.base import BaseTab
+from frontend_desktop.tab_registry import get_tab_widget_class
+from frontend_desktop.types.nav import Tabs
 from frontend_desktop.widgets.resizable_stacked_widget import ResizableStackedWidget
 from frontend_desktop.widgets.scrollable_error_dialog import ScrollableErrorDialog
 from frontend_desktop.widgets.utils import build_v_line
@@ -45,21 +47,21 @@ class MainWindow(QMainWindow):
 
         # left nav (buttons only)
         self.nav = NavigationTabs(self)
-        self._tabs = {}
+        self.tabs = {}
 
         # right: stacked widget built/owned by MainWindow
         self.stacked_widget = ResizableStackedWidget(self)
         self.stacked_widget.setMinimumWidth(500)
         for tab in Tabs:
-            WidgetClass = tab.get_tab_info().widget_class
-            tab_widget = WidgetClass(self)
+            WidgetClass = get_tab_widget_class(tab)
+            tab_widget: BaseTab = WidgetClass(parent=self)
             self.stacked_widget.addWidget(tab_widget)
-            self._tabs[tab] = tab_widget
+            self.tabs[tab] = tab_widget
 
         # wire nav -> pages
         self.nav.tabRequested.connect(self.stacked_widget.setCurrentIndex)
 
-        # print(self._tabs)
+        # print(self.tabs) # TODO: remove
 
         # layout
         central = QHBoxLayout()
