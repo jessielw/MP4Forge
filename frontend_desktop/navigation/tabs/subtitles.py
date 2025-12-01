@@ -1,31 +1,21 @@
 import re
-from dataclasses import dataclass
 from pathlib import Path
 
-from iso639 import Language
 from pymediainfo import MediaInfo
 from PySide6.QtWidgets import QTreeWidgetItem, QVBoxLayout, QWidget
 from typing_extensions import override
 
+from core.job_states import SubtitleState
 from core.utils.language import get_full_language_str
-from frontend_desktop.navigation.tabs.base import BaseTab, BaseTabState
+from frontend_desktop.navigation.tabs.base import BaseTab
 from frontend_desktop.widgets.multi_tabbed_widget import MultiTabbedTabWidget
 
 
-@dataclass(frozen=True, slots=True)
-class SubtitleTabState(BaseTabState):
-    """Data structure for exporting the state of the Subtitle tab."""
-
-    input_file: Path
-    language: Language | None
-    title: str
-
-
-class SubtitleTab(BaseTab[SubtitleTabState]):
+class SubtitleTab(BaseTab[SubtitleState]):
     def __init__(self, parent=None):
         super().__init__(
-            file_dialog_filters="Subtitle Files (.srt .idx .ttxt)",
-            dnd_extensions=("*.srt", "*.idx", "*.ttxt"),
+            file_dialog_filters="Subtitle Files (*.srt *.idx *.ttxt)",
+            dnd_extensions=(".srt", ".idx", ".ttxt"),
             parent=parent,
         )
         self.setObjectName("SubtitleTab")
@@ -98,12 +88,16 @@ class SubtitleTab(BaseTab[SubtitleTabState]):
         self.delay_spinbox.setValue(delay)
 
     @override
-    def export_state(self) -> SubtitleTabState:
+    def export_state(self) -> SubtitleState | None:
         """Exports the current state."""
-        return SubtitleTabState(
-            input_file=Path(self.input_entry.text().strip()),
-            language=self.lang_combo.currentData(),
-            title=self.title_entry.text().strip(),
+        return (
+            SubtitleState(
+                input_file=Path(self.input_entry.text().strip()),
+                language=self.lang_combo.currentData(),
+                title=self.title_entry.text().strip(),
+            )
+            if self.is_tab_ready()
+            else None
         )
 
     @override
@@ -120,10 +114,6 @@ class MultiSubtitleTab(QWidget):
         self.multi_track = MultiTabbedTabWidget(
             parent=self,
             widget_class=SubtitleTab,
-            # widget_args={
-            #     "file_dialog_filters": "Subtitle Files (*.srt *.idx *.ttxt)",
-            #     "dnd_extensions": ("*.srt", "*.idx", "*.ttxt"),
-            # },
             tab_name="Track",
             initial_count=1,
             add_widget_cb=self._on_new_subtitle_widget_added,
@@ -142,21 +132,16 @@ class MultiSubtitleTab(QWidget):
         sub_tab.media_info_tree.hide()
         sub_tab.main_layout.addStretch()
 
-    def export_all_subtitle_states(self) -> list[SubtitleTabState]:
-        """Export states from all subtitle track tabs."""
+    def export_all_subtitle_states(self) -> list[SubtitleState]:
+        """Export states from all subtitle track tabs (only tabs with input files)."""
         states = []
         for widget in self.multi_track.get_all_tab_widgets():
-            if hasattr(widget, "export_state"):
-                states.append(getattr(widget, "export_state")())
+            export_state = getattr(widget, "export_state", None)
+            if export_state:
+                state = export_state()
+                if state:  # only include tabs with actual input
+                    states.append(state)
         return states
-
-    def are_all_tabs_ready(self) -> bool:
-        """Check if all audio track tabs are ready."""
-        for widget in self.multi_track.get_all_tab_widgets():
-            if hasattr(widget, "is_tab_ready"):
-                if not getattr(widget, "is_tab_ready")():
-                    return False
-        return True
 
     def reset_all_tabs(self) -> None:
         """Reset all tab widgets to default state."""
