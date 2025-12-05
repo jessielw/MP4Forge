@@ -2,7 +2,14 @@ from collections.abc import Callable
 
 import qtawesome as qta
 from PySide6.QtCore import QEvent, Qt
-from PySide6.QtWidgets import QApplication, QTabBar, QTabWidget, QVBoxLayout, QWidget
+from PySide6.QtWidgets import (
+    QApplication,
+    QCheckBox,
+    QTabBar,
+    QTabWidget,
+    QVBoxLayout,
+    QWidget,
+)
 
 from frontend_desktop.widgets.qtawesome_theme_swapper import QTAThemeSwap
 
@@ -99,10 +106,43 @@ class MultiTabbedTabWidget(QWidget):
         # update plus tab index since we inserted before it
         self._plus_tab_idx = self.tabs.count() - 1
 
+        # connect default checkbox for mutual exclusion (if it exists)
+        default_checkbox: QCheckBox | None = getattr(
+            tab_widget, "default_checkbox", None
+        )
+        if default_checkbox:
+            default_checkbox.toggled.connect(
+                lambda checked, widget=tab_widget: self._handle_default_toggled(
+                    widget, checked
+                )
+            )
+
         if switch_to:
             self.tabs.setCurrentIndex(idx)
 
         return tab_widget
+
+    def _handle_default_toggled(self, toggled_widget: QWidget, checked: bool) -> None:
+        """
+        Handle default checkbox toggling to ensure mutual exclusion.
+        When one track is marked as default, uncheck all others.
+
+        Args:
+            toggled_widget: The widget whose checkbox was toggled
+            checked: Whether the checkbox was checked
+        """
+        if not checked:
+            return  # no action needed when unchecking
+
+        # uncheck default on all other tabs
+        for widget in self.get_all_tab_widgets():
+            default_checkbox: QCheckBox | None = getattr(
+                widget, "default_checkbox", None
+            )
+            if widget is not toggled_widget and default_checkbox:
+                default_checkbox.blockSignals(True)
+                default_checkbox.setChecked(False)
+                default_checkbox.blockSignals(False)
 
     def _add_plus_tab(self) -> None:
         """Add the special plus tab for creating new tabs."""
