@@ -31,6 +31,8 @@ class ChapterTab(BaseTab[ChapterState]):
         self.title_entry.hide()
         self.delay_lbl.hide()
         self.delay_spinbox.hide()
+        self.default_checkbox.hide()
+        self.forced_checkbox.hide()
         self.media_info_tree_lbl.hide()
         self.media_info_tree.hide()
 
