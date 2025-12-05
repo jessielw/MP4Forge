@@ -2,7 +2,12 @@ import re
 from pathlib import Path
 
 from pymediainfo import MediaInfo
-from PySide6.QtWidgets import QMessageBox, QTreeWidgetItem, QVBoxLayout, QWidget
+from PySide6.QtWidgets import (
+    QMessageBox,
+    QTreeWidgetItem,
+    QVBoxLayout,
+    QWidget,
+)
 from typing_extensions import override
 
 from core.job_states import AudioState
@@ -30,6 +35,9 @@ class AudioTab(BaseTab[AudioState]):
             parent=parent,
         )
         self.setObjectName("AudioTab")
+
+        # audio tracks only have default flag, not forced
+        self.forced_checkbox.hide()
 
     @override
     def _load_language(self, media_info: MediaInfo) -> None:
@@ -114,6 +122,7 @@ class AudioTab(BaseTab[AudioState]):
                 language=self.lang_combo.currentData(),
                 title=self.title_entry.text().strip(),
                 delay_ms=self.delay_spinbox.value(),
+                default=self.default_checkbox.isChecked(),
             )
             if self.is_tab_ready()
             else None
