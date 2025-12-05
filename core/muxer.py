@@ -1,5 +1,7 @@
 import platform
 import subprocess
+import tempfile
+from pathlib import Path
 from typing import Optional
 from uuid import UUID
 
@@ -142,7 +144,7 @@ class VideoMuxer:
                 return
 
             # build MP4Box command
-            cmd = ["mp4box", "-new"]  # -new creates fresh output
+            cmd = ["mp4box"]
 
             # add video track
             if job.video:
@@ -179,16 +181,21 @@ class VideoMuxer:
                 cmd.extend(["-add", f"{subtitle.input_file}{subtitle_opts}"])
 
             # add chapters if present
+            chapters_path: Path | None = None
             if job.chapters and job.chapters.chapters:
-                # TODO: MP4Box expects chapters in a file (OGM format)
-                # Need to:
-                # 1. Write job.chapters.chapters to temp file in OGM format
-                # 2. Add -chap <temp_file> to command
-                # 3. Clean up temp file after processing
-                pass
+                temp_file = tempfile.NamedTemporaryFile(
+                    prefix="mp4bc_", delete=False, suffix=".ogm"
+                )
+                temp_file.write(job.chapters.chapters.encode("utf-8"))
+                chapters_path = Path(temp_file.name)
+                cmd.extend(["-chap", str(chapters_path)])
 
-            # output file
-            cmd.append(str(job.output_file))
+            # this prevents MP4Box adding double metadata headers but it
+            # doesn't actually bother the underlying HDR metadata
+            cmd.extend(["-hdr", "none"])
+
+            # output file (-new is required to ensure we create a new file)
+            cmd.extend(["-new", str(job.output_file)])
 
             print(cmd)
 
@@ -295,6 +302,9 @@ class VideoMuxer:
             if process and process.poll() is None:
                 self._kill_process(process)
             self.active_processes.pop(job.job_id, None)
+            # delete chapters temp file if created
+            if chapters_path and chapters_path.exists():
+                chapters_path.unlink()
 
     def _kill_process(self, process: subprocess.Popen) -> None:
         """Kill process and all children using psutil"""
