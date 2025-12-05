@@ -6,6 +6,7 @@ from typing import Generic, Protocol, TypeVar
 from pymediainfo import MediaInfo
 from PySide6.QtCore import QSize, Qt, QTimer, Slot
 from PySide6.QtWidgets import (
+    QCheckBox,
     QFileDialog,
     QFrame,
     QHBoxLayout,
@@ -103,6 +104,16 @@ class BaseTab(QWidget, Generic[TState]):
         self.delay_spinbox = QSpinBox(self, minimum=-999999, maximum=999999, value=0)
         self.delay_spinbox.wheelEvent = cancel_scroll_event
 
+        # default/forced flags (subclasses can hide if not needed)
+        self.default_checkbox = QCheckBox("Default", self)
+        self.forced_checkbox = QCheckBox("Forced", self)
+
+        # flags layout
+        flags_layout = QHBoxLayout()
+        flags_layout.addWidget(self.default_checkbox)
+        flags_layout.addWidget(self.forced_checkbox)
+        flags_layout.addStretch()
+
         # media info tree
         self.media_info_tree_lbl = QLabel("MediaInfo", self)
         self.media_info_tree = QTreeWidget(self, columnCount=2)
@@ -121,6 +132,7 @@ class BaseTab(QWidget, Generic[TState]):
         self.main_layout.addWidget(self.title_entry)
         self.main_layout.addWidget(self.delay_lbl)
         self.main_layout.addWidget(self.delay_spinbox)
+        self.main_layout.addLayout(flags_layout)
         self.main_layout.addWidget(self.media_info_tree_lbl)
         self.main_layout.addWidget(self.media_info_tree, stretch=1)
 
