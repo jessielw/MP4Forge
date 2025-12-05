@@ -38,6 +38,7 @@ class AudioState:
     language: Optional[Language] = None
     title: str = ""
     delay_ms: int = 0
+    default: bool = False
 
     def to_dict(self) -> dict:
         """Convert to dictionary for serialization."""
@@ -46,6 +47,7 @@ class AudioState:
             "language": self.language.part3 if self.language else None,
             "title": self.title,
             "delay_ms": self.delay_ms,
+            "default": self.default,
         }
 
 
@@ -56,6 +58,8 @@ class SubtitleState:
     input_file: Path
     language: Optional[Language] = None
     title: str = ""
+    default: bool = False
+    forced: bool = False
 
     def to_dict(self) -> dict:
         """Convert to dictionary for serialization."""
@@ -63,6 +67,8 @@ class SubtitleState:
             "input_file": str(self.input_file),
             "language": self.language.part3 if self.language else None,
             "title": self.title,
+            "default": self.default,
+            "forced": self.forced,
         }
 
 
