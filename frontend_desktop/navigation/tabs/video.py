@@ -33,6 +33,11 @@ class VideoTab(BaseTab[VideoState]):
             parent=parent,
         )
         self.setObjectName("VideoTab")
+
+        # video tracks don't use default/forced flags
+        self.default_checkbox.hide()
+        self.forced_checkbox.hide()
+
         self.main_layout.setContentsMargins(0, 0, 0, 0)
         self.main_layout.addStretch()
 
