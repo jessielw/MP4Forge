@@ -2,7 +2,11 @@ import re
 from pathlib import Path
 
 from pymediainfo import MediaInfo
-from PySide6.QtWidgets import QTreeWidgetItem, QVBoxLayout, QWidget
+from PySide6.QtWidgets import (
+    QTreeWidgetItem,
+    QVBoxLayout,
+    QWidget,
+)
 from typing_extensions import override
 
 from core.job_states import SubtitleState
@@ -95,6 +99,8 @@ class SubtitleTab(BaseTab[SubtitleState]):
                 input_file=Path(self.input_entry.text().strip()),
                 language=self.lang_combo.currentData(),
                 title=self.title_entry.text().strip(),
+                default=self.default_checkbox.isChecked(),
+                forced=self.forced_checkbox.isChecked(),
             )
             if self.is_tab_ready()
             else None
