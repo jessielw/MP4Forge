@@ -9,6 +9,8 @@ import psutil
 
 from core.queue_manager import JobStatus, MuxJob, QueueManager
 
+# TODO: anything that mentions 'logging' in the file needs setup later to handle it
+
 
 class ProgressCallback:
     """Override this in your UI layer"""
@@ -159,6 +161,7 @@ class VideoMuxer:
                 cmd.extend(["-add", f"{job.video.input_file}{video_opts}"])
 
             # add audio tracks
+            audio_defaults_set = any(audio.default for audio in job.audio_tracks)
             for audio in job.audio_tracks:
                 audio_opts = "#audio"
                 if audio.language:
@@ -166,10 +169,18 @@ class VideoMuxer:
                 audio_opts += f":name={audio.title}" if audio.title else ":name="
                 if audio.delay_ms != 0:
                     audio_opts += f":delay={audio.delay_ms}"
-                # TODO: add default flag support when available
+
+                # default flag logic
+                if audio.default:
+                    audio_opts += ":tkhd=3:group=1"
+                elif audio_defaults_set:
+                    # explicitly disable default if another track is default
+                    audio_opts += ":tkhd=0:group=1"
+
                 cmd.extend(["-add", f"{audio.input_file}{audio_opts}"])
 
-            # add subtitle tracks
+            # add subtitle tracks with default/forced logic
+            subtitle_defaults_set = any(sub.default for sub in job.subtitle_tracks)
             for subtitle in job.subtitle_tracks:
                 subtitle_opts = ""
                 if subtitle.language:
@@ -177,27 +188,37 @@ class VideoMuxer:
                 subtitle_opts += (
                     f":name={subtitle.title}" if subtitle.title else ":name="
                 )
-                # TODO: add forced and default flag support when available
+
+                # default flag logic
+                if subtitle.default:
+                    subtitle_opts += ":tkhd=3:group=2"
+                elif subtitle_defaults_set:
+                    # explicitly disable default if another track is default
+                    subtitle_opts += ":tkhd=0:group=2"
+
+                # forced flag
+                if subtitle.forced:
+                    subtitle_opts += ":txtflags=0xC0000000"
+
                 cmd.extend(["-add", f"{subtitle.input_file}{subtitle_opts}"])
 
             # add chapters if present
             chapters_path: Path | None = None
             if job.chapters and job.chapters.chapters:
                 temp_file = tempfile.NamedTemporaryFile(
-                    prefix="mp4bc_", delete=False, suffix=".ogm"
+                    prefix="mp4bc_", suffix=".txt", delete=False
                 )
                 temp_file.write(job.chapters.chapters.encode("utf-8"))
+                temp_file.close()  # we must close before MP4Box can read it (Windows file locking)
                 chapters_path = Path(temp_file.name)
                 cmd.extend(["-chap", str(chapters_path)])
 
-            # this prevents MP4Box adding double metadata headers but it
-            # doesn't actually bother the underlying HDR metadata
-            cmd.extend(["-hdr", "none"])
+            # -hdr none: prevents MP4Box adding double metadata headers
+            # -proglf: enable progress logging for parsing
+            # -new: create new output file
+            cmd.extend(["-hdr", "none", "-proglf", "-new", str(job.output_file)])
 
-            # output file (-new is required to ensure we create a new file)
-            cmd.extend(["-new", str(job.output_file)])
-
-            print(cmd)
+            print(cmd)  # TODO: convert to logging later
 
             # create subprocess with no window on Windows
             startupinfo = None
@@ -221,14 +242,20 @@ class VideoMuxer:
 
             self.active_processes[job.job_id] = process
 
-            # monitor MP4Box output for progress
-            total_frames = None
-            current_frame = 0
+            # Calculate total operations for accurate progress tracking
+            # MP4Box processes: video + audio track(s) + subtitle track(s) + final write
+            total_operations = 1  # video track (always present)
+            total_operations += len(job.audio_tracks)
+            total_operations += len(job.subtitle_tracks)
+            total_operations += 1  # final ISO file writing
+            
+            current_operation = 0
+            last_operation_progress = 0
             all_output = []
 
-            assert (
-                process.stdout is not None
-            )  # TODO: remove this, only for testing for now
+            if not process.stdout:
+                raise RuntimeError("Failed to capture MP4Box output")
+
             for line in process.stdout:
                 # check if job was cancelled
                 current_job = self.queue_manager.get_job(job.job_id)
@@ -238,30 +265,47 @@ class VideoMuxer:
 
                 line = line.strip()
                 all_output.append(line)
-                # print(f"MP4Box: {line}")  # debug output
 
-                # parse MP4Box progress output
-                # TODO: Test actual MP4Box output and adjust parsing
-                # MP4Box typically shows: "Importing [file]: frame X/Y" or similar
-                if "frame" in line.lower():
-                    parts = line.split()
-                    for i, part in enumerate(parts):
-                        if part.lower() == "frame" and i + 1 < len(parts):
-                            try:
-                                frame_info = parts[i + 1].split("/")
-                                if len(frame_info) == 2:
-                                    current_frame = int(frame_info[0])
-                                    total_frames = int(frame_info[1])
-
-                                    if total_frames > 0:
-                                        progress = (current_frame / total_frames) * 100
-                                        message = f"Processing frame {current_frame}/{total_frames}"
-                                        self._notify_progress(progress, message)
-                                        self.queue_manager.update_job_progress(
-                                            job.job_id, progress, message
-                                        )
-                            except (ValueError, IndexError):
-                                pass
+                # parse progress lines: "Import: |====| (XX/100)" or "ISO File Writing: |====| (XX/100)"
+                if ("Import:" in line or "Importing ISO File:" in line or "ISO File Writing:" in line) and "(" in line:
+                    try:
+                        # extract progress percentage
+                        progress_part = line.split("(")[-1].split("/")[0].strip()
+                        current_operation_progress = int(progress_part)
+                        
+                        # detect transition to next operation when progress drops from high to low
+                        if current_operation_progress <= 5 and last_operation_progress >= 95:
+                            current_operation += 1
+                        
+                        last_operation_progress = current_operation_progress
+                        
+                        # calculate overall progress (0-100%)
+                        operation_weight = 100.0 / total_operations
+                        overall_progress = (current_operation * operation_weight) + (
+                            current_operation_progress * operation_weight / 100.0
+                        )
+                        overall_progress = min(overall_progress, 100.0)
+                        
+                        # determine descriptive stage message based on current operation
+                        if current_operation == 0:
+                            stage = "Importing video"
+                        elif current_operation <= len(job.audio_tracks):
+                            track_num = current_operation
+                            stage = f"Importing audio {track_num}/{len(job.audio_tracks)}"
+                        elif current_operation <= len(job.audio_tracks) + len(job.subtitle_tracks):
+                            track_num = current_operation - len(job.audio_tracks)
+                            stage = f"Importing subtitle {track_num}/{len(job.subtitle_tracks)}"
+                        else:
+                            stage = "Writing output file"
+                        
+                        message = f"{stage} ({current_operation_progress}%) - {overall_progress:.1f}% overall"
+                        print(message) # add to logging eventually
+                        self._notify_progress(overall_progress, message)
+                        self.queue_manager.update_job_progress(
+                            job.job_id, overall_progress, message
+                        )
+                    except (ValueError, IndexError):
+                        pass
 
             return_code = process.wait()
             self.active_processes.pop(job.job_id, None)
@@ -278,7 +322,7 @@ class VideoMuxer:
                 # capture detailed error from all output
                 error_details = "\n".join(all_output) if all_output else "Unknown error"
                 error_msg = f"MP4Box exited with code {return_code}\n{error_details}"
-                print(f"MP4Box failed: {error_msg}")  # Debug output
+                print(f"MP4Box failed: {error_msg}")  # Debug logging output
                 self.queue_manager.update_job_status(
                     job.job_id, JobStatus.FAILED, error_msg
                 )
