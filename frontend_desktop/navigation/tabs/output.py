@@ -1,3 +1,4 @@
+import traceback
 from pathlib import Path
 from typing import TYPE_CHECKING
 from uuid import UUID
@@ -36,6 +37,7 @@ class MuxWorker(QThread):
     """Worker thread to process queue jobs - only runs when queue is active"""
 
     job_finished = Signal(UUID)
+    error_occurred = Signal(str, str)
 
     def __init__(self, queue_manager: QueueManager, parent=None) -> None:
         super().__init__(parent)
@@ -45,16 +47,22 @@ class MuxWorker(QThread):
 
     def run(self) -> None:
         """Process jobs from queue sequentially"""
-        while self.is_running:
-            queued_jobs = self.queue_manager.get_queued_jobs()
+        try:
+            while self.is_running:
+                queued_jobs = self.queue_manager.get_queued_jobs()
 
-            # if no jobs, exit the worker (queue is complete)
-            if not queued_jobs:
-                break
+                # if no jobs, exit the worker (queue is complete)
+                if not queued_jobs:
+                    break
 
-            job = queued_jobs[0]
-            self.muxer.mux_from_job(job)
-            self.job_finished.emit(job.job_id)
+                job = queued_jobs[0]
+                self.muxer.mux_from_job(job)
+                self.job_finished.emit(job.job_id)
+        except Exception as e:
+            # catch any unhandled exceptions in the worker thread
+            error_msg = f"Worker thread error: {str(e)}"
+            print(error_msg)  # debug logging output?
+            self.error_occurred.emit(error_msg, traceback.format_exc())
 
     def stop(self) -> None:
         """Signal thread to stop gracefully after current job finishes"""
@@ -273,6 +281,7 @@ class OutputTab(QWidget):
             # create and start worker
             self.worker = MuxWorker(self.queue_manager, self)
             self.worker.job_finished.connect(self._on_job_finished)
+            self.worker.error_occurred.connect(self._on_worker_error)
             # thread naturally finishes
             self.worker.finished.connect(self._on_worker_finished)
             self.worker.start()
@@ -286,8 +295,10 @@ class OutputTab(QWidget):
 
         if self.worker:
             self.worker.stop()
-            # worker will finish naturally after current job completes
-            # the finished signal will clean up properly
+            # Wait for the worker thread to actually finish before clearing reference
+            # this prevents threading errors during cleanup
+            if self.worker.isRunning():
+                self.worker.wait(2500)  # wait up to 2.5 seconds for graceful shutdown
             self.worker = None
             self._refresh_table()  # update UI after stopping
 
@@ -324,6 +335,12 @@ class OutputTab(QWidget):
         # only stop if no more queued jobs (worker naturally exits when idle)
         if not self.queue_manager.get_queued_jobs():
             self._stop_queue()
+        self._refresh_table()
+
+    @Slot(str, str)
+    def _on_worker_error(self, error_msg: str, _traceback: str) -> None:
+        """Handle unhandled errors from worker thread"""
+        GSigs().main_window_update_status_tip.emit(f"Worker error: {error_msg}", 5000)
         self._refresh_table()
 
     def _refresh_table(self) -> None:
