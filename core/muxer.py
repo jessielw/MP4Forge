@@ -7,9 +7,8 @@ from uuid import UUID
 
 import psutil
 
+from core.logger import LOG
 from core.queue_manager import JobStatus, MuxJob, QueueManager
-
-# TODO: anything that mentions 'logging' in the file needs setup later to handle it
 
 
 class ProgressCallback:
@@ -36,8 +35,8 @@ class VideoMuxer:
 
     def mux_from_job(self, job: MuxJob) -> None:
         """Process a MuxJob from the queue"""
-        # print(job)
         # self._mock_mux_with_ping(job)
+        LOG.debug(f"Mux job: {job}")
         self._mux_with_mp4box(job)
 
     def _mock_mux_with_ping(self, job: MuxJob):
@@ -134,7 +133,7 @@ class VideoMuxer:
             self.active_processes.pop(job.job_id, None)
 
     def _mux_with_mp4box(self, job: MuxJob) -> None:
-        """Actual MP4Box muxing implementation"""
+        """MP4Box muxing implementation."""
         process = None
 
         try:
@@ -217,8 +216,7 @@ class VideoMuxer:
             # -proglf: enable progress logging for parsing
             # -new: create new output file
             cmd.extend(["-hdr", "none", "-proglf", "-new", str(job.output_file)])
-
-            print(cmd)  # TODO: convert to logging later
+            LOG.debug(f"MP4Box command: {' '.join(cmd)}")
 
             # create subprocess with no window on Windows
             startupinfo = None
@@ -248,7 +246,7 @@ class VideoMuxer:
             total_operations += len(job.audio_tracks)
             total_operations += len(job.subtitle_tracks)
             total_operations += 1  # final ISO file writing
-            
+
             current_operation = 0
             last_operation_progress = 0
             all_output = []
@@ -264,42 +262,54 @@ class VideoMuxer:
                     return
 
                 line = line.strip()
+                LOG.debug(f"MP4Box output: {line}")
                 all_output.append(line)
 
                 # parse progress lines: "Import: |====| (XX/100)" or "ISO File Writing: |====| (XX/100)"
-                if ("Import:" in line or "Importing ISO File:" in line or "ISO File Writing:" in line) and "(" in line:
+                if (
+                    "Import:" in line
+                    or "Importing ISO File:" in line
+                    or "ISO File Writing:" in line
+                ) and "(" in line:
                     try:
                         # extract progress percentage
                         progress_part = line.split("(")[-1].split("/")[0].strip()
                         current_operation_progress = int(progress_part)
-                        
+
                         # detect transition to next operation when progress drops from high to low
-                        if current_operation_progress <= 5 and last_operation_progress >= 95:
+                        if (
+                            current_operation_progress <= 5
+                            and last_operation_progress >= 95
+                        ):
                             current_operation += 1
-                        
+
                         last_operation_progress = current_operation_progress
-                        
+
                         # calculate overall progress (0-100%)
                         operation_weight = 100.0 / total_operations
                         overall_progress = (current_operation * operation_weight) + (
                             current_operation_progress * operation_weight / 100.0
                         )
                         overall_progress = min(overall_progress, 100.0)
-                        
+
                         # determine descriptive stage message based on current operation
                         if current_operation == 0:
                             stage = "Importing video"
                         elif current_operation <= len(job.audio_tracks):
                             track_num = current_operation
-                            stage = f"Importing audio {track_num}/{len(job.audio_tracks)}"
-                        elif current_operation <= len(job.audio_tracks) + len(job.subtitle_tracks):
+                            stage = (
+                                f"Importing audio {track_num}/{len(job.audio_tracks)}"
+                            )
+                        elif current_operation <= len(job.audio_tracks) + len(
+                            job.subtitle_tracks
+                        ):
                             track_num = current_operation - len(job.audio_tracks)
                             stage = f"Importing subtitle {track_num}/{len(job.subtitle_tracks)}"
                         else:
                             stage = "Writing output file"
-                        
+
                         message = f"{stage} ({current_operation_progress}%) - {overall_progress:.1f}% overall"
-                        print(message) # add to logging eventually
+                        LOG.debug(message)
                         self._notify_progress(overall_progress, message)
                         self.queue_manager.update_job_progress(
                             job.job_id, overall_progress, message
@@ -322,7 +332,7 @@ class VideoMuxer:
                 # capture detailed error from all output
                 error_details = "\n".join(all_output) if all_output else "Unknown error"
                 error_msg = f"MP4Box exited with code {return_code}\n{error_details}"
-                print(f"MP4Box failed: {error_msg}")  # Debug logging output
+                LOG.error(f"MP4Box failed: {error_msg}")
                 self.queue_manager.update_job_status(
                     job.job_id, JobStatus.FAILED, error_msg
                 )
