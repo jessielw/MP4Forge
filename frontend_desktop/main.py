@@ -66,8 +66,6 @@ class MainWindow(QMainWindow):
         # wire nav -> pages
         self.nav.tabRequested.connect(self.stacked_widget.setCurrentIndex)
 
-        # print(self.tabs) # TODO: remove
-
         # layout
         central = QHBoxLayout()
         central.addWidget(self.nav, stretch=1)
