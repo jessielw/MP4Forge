@@ -45,6 +45,12 @@ class VideoTab(BaseTab[VideoState]):
     @Slot(tuple)
     def _on_media_info_finished(self, result: tuple[MediaInfo, Path]) -> None:
         media_info, file_path = result
+
+        # detect title if exists in the mediainfo
+        v_track = media_info.video_tracks[0] if media_info.video_tracks else None
+        if v_track and v_track.title:
+            self.title_entry.setText(v_track.title)
+
         # we will attempt to extract chapters if they exist, ignoring any errors silently
         try:
             chapters = auto_gen_chapters(media_info)
