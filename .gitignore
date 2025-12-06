@@ -23,3 +23,6 @@ Thumbs.db
 
 # misc
 .scraps/
+
+# runtime
+runtime/
