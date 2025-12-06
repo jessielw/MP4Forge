@@ -1,7 +1,7 @@
 import sys
 import traceback
 
-from PySide6.QtCore import QtMsgType, Slot, qInstallMessageHandler
+from PySide6.QtCore import Qt, QtMsgType, Slot, qInstallMessageHandler
 from PySide6.QtWidgets import (
     QApplication,
     QHBoxLayout,
@@ -11,6 +11,8 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from core.config import Conf
+from core.logger import LOG
 from frontend_desktop.global_signals import GSigs
 from frontend_desktop.navigation.nav import NavigationTabs
 from frontend_desktop.navigation.tabs.base import BaseTab
@@ -28,6 +30,9 @@ class MainWindow(QMainWindow):
 
         # initialize exception handling
         self._setup_exception_hooks()
+
+        # config
+        self.conf = Conf
 
         # hook up signals
         GSigs().main_window_update_status_tip.connect(self.update_status_tip)
@@ -73,8 +78,26 @@ class MainWindow(QMainWindow):
         container.setLayout(central)
         self.setCentralWidget(container)
 
-        # default to index 0
-        self.stacked_widget.setCurrentIndex(0)
+        # apply config settings after UI is fully initialized
+        self._apply_config_on_startup()
+
+    def _apply_config_on_startup(self) -> None:
+        """Apply saved configuration settings on application startup"""
+        # apply theme
+        theme = self.conf.theme
+        app = QApplication.instance()
+        if theme != "Auto":
+            app.styleHints().setColorScheme(  # pyright: ignore[reportAttributeAccessIssue, reportOptionalMemberAccess]
+                Qt.ColorScheme.Light if theme == "Light" else Qt.ColorScheme.Dark
+            )
+        else:
+            app.styleHints().unsetColorScheme()  # pyright: ignore[reportAttributeAccessIssue, reportOptionalMemberAccess]
+
+        # apply log level
+        LOG.set_log_level(self.conf.log_level)
+        LOG.info(
+            f"Applied config - Theme: {theme}, Log Level: {self.conf.log_level.name}"
+        )
 
     def _setup_exception_hooks(self) -> None:
         sys.excepthook = self.exception_handler
