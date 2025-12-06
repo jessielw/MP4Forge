@@ -12,7 +12,7 @@ from core.queue_manager import JobStatus, MuxJob, QueueManager
 
 
 class ProgressCallback:
-    """Override this in your UI layer"""
+    """Override this in the UI layer"""
 
     def on_progress(self, percent: float, message: str) -> None:
         pass
