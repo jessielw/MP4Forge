@@ -43,7 +43,7 @@ class SubtitleTab(BaseTab[SubtitleState]):
         """Loads title from media info into the title entry."""
         title = ""
         if media_info.audio_tracks:
-            title = media_info.audio_tracks[0].title or ""
+            title = media_info.text_tracks[0].title or ""
         self.title_entry.setText(title)
 
     @override
