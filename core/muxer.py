@@ -262,7 +262,8 @@ class VideoMuxer:
                     return
 
                 line = line.strip()
-                LOG.debug(f"MP4Box output: {line}")
+                if line:
+                    LOG.debug(f"MP4Box output: {line}")
                 all_output.append(line)
 
                 # parse progress lines: "Import: |====| (XX/100)" or "ISO File Writing: |====| (XX/100)"
