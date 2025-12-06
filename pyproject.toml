@@ -10,8 +10,26 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+# core
+core = [
+    "python-iso639>=2025.11.11",
+    "pymediainfo",
+    "typing_extensions",
+    "tomlkit",
+    "autoqpf>=0.2.5",
+    "psutil",
+    "shortuuid",
+    "semver",
+]
+
 # desktop GUI
-desktop = ["pyside6==6.8.3", "qtawesome>=1.4.0", "python-iso639>=2025.11.11", "pymediainfo", "typing_extensions"]
+desktop = [
+    "pyside6==6.8.3",
+    "qtawesome>=1.4.0",
+    "python-iso639>=2025.11.11",
+    "pymediainfo",
+    "typing_extensions",
+]
 
 # web backend (for headless/remote access)
 # web = [
@@ -31,6 +49,7 @@ dev = [
     "fastapi>=0.115.0",
     "uvicorn[standard]>=0.31.0",
     "pyinstaller>=6.0.0",
+    "debugpy",
 ]
 
 [build-system]
