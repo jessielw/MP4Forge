@@ -1,5 +1,6 @@
 import re
 from pathlib import Path
+from typing import Any
 
 from pymediainfo import MediaInfo
 from PySide6.QtWidgets import (
@@ -14,6 +15,7 @@ from core.job_states import AudioState
 from core.utils.language import get_full_language_str
 from frontend_desktop.navigation.tabs.base import BaseTab
 from frontend_desktop.widgets.multi_tabbed_widget import MultiTabbedTabWidget
+from frontend_desktop.widgets.track_selector_dialog import TrackSelectorDialog
 
 
 class AudioTab(BaseTab[AudioState]):
@@ -39,10 +41,21 @@ class AudioTab(BaseTab[AudioState]):
         # audio tracks only have default flag, not forced
         self.forced_checkbox.hide()
 
+        # track_id: MediaInfo track ID (e.g., 1, 2, 3) - used for MP4Box #N selector
+        # for MediaInfo array access: iterate audio_tracks directly (already filtered)
+        self.selected_track_id: int | None = None
+
     @override
     def _load_language(self, media_info: MediaInfo) -> None:
         """Loads language from media info into the language combo box."""
-        lang = media_info.audio_tracks[0].language if media_info.audio_tracks else None
+        # find track by track_id in audio_tracks array
+        lang = None
+        if self.selected_track_id is not None:
+            for track in media_info.audio_tracks:
+                if track.track_id == self.selected_track_id:
+                    lang = track.language
+                    break
+
         if lang:
             full_lang = get_full_language_str(lang)
             if full_lang:
@@ -57,8 +70,12 @@ class AudioTab(BaseTab[AudioState]):
     def _load_title(self, media_info: MediaInfo) -> None:
         """Loads title from media info into the title entry."""
         title = ""
-        if media_info.audio_tracks:
-            title = media_info.audio_tracks[0].title or ""
+        # find track by track_id in audio_tracks array
+        if self.selected_track_id is not None:
+            for track in media_info.audio_tracks:
+                if track.track_id == self.selected_track_id:
+                    title = track.title or ""
+                    break
         self.title_entry.setText(title)
 
     @override
@@ -77,7 +94,33 @@ class AudioTab(BaseTab[AudioState]):
             self.reset_tab()
             return
 
-        track = media_info.audio_tracks[0]
+        # check if MP4 with multiple audio tracks
+        file_path = Path(self.input_entry.text().strip())
+        is_mp4 = file_path.suffix.lower() in (".mp4", ".m4a")
+
+        if is_mp4 and len(media_info.audio_tracks) > 1:
+            # show track selector dialog
+            dialog = TrackSelectorDialog(file_path, parent=self)
+            if dialog.exec():
+                # returns MediaInfo track_id (used for MP4Box #N)
+                self.selected_track_id = dialog.get_selected_track_id()
+                # find track by track_id in audio_tracks array
+                track = media_info.audio_tracks[0]  # default
+                if self.selected_track_id is not None:
+                    for audio_track in media_info.audio_tracks:
+                        if audio_track.track_id == self.selected_track_id:
+                            track = audio_track
+                            break
+            else:
+                # user cancelled
+                self.reset_tab()
+                return
+        else:
+            # single track or non-MP4 - use first track
+            track = media_info.audio_tracks[0]
+            self.selected_track_id = track.track_id or 1
+
+        # populate tree with selected track info
         for key, value in track.to_data().items():
             # skip 'other_' keys
             if "track_type" == key or key.startswith("other_"):
@@ -96,20 +139,31 @@ class AudioTab(BaseTab[AudioState]):
         """
         delay = 0
 
-        # try parsing delay from filename first (common pattern: DELAY 100ms or similar)
-        # TODO: later only load delay from elementary streams
-        filename = file_path.stem
-        delay_match = re.search(r"DELAY[_\s]+(-?\d+)ms", filename, re.IGNORECASE)
-        if delay_match:
-            delay = int(delay_match.group(1))
-        elif media_info.audio_tracks:
-            # fallback to mediainfo
-            src_delay = media_info.audio_tracks[0].source_delay
-            reg_delay = media_info.audio_tracks[0].delay
-            if src_delay is not None:
-                delay = int(src_delay)
-            elif reg_delay is not None:
-                delay = int(reg_delay)
+        # check if file is an elementary file
+        gen_track = media_info.general_tracks[0]
+        v_count = self._parse_mi_count(gen_track.count_of_video_streams)
+        a_count = self._parse_mi_count(gen_track.count_of_audio_streams)
+        s_count = self._parse_mi_count(gen_track.count_of_text_streams)
+        m_count = self._parse_mi_count(gen_track.count_of_menu_streams)
+        track_count = sum((v_count, a_count, s_count, m_count))
+        if track_count == 1:
+            filename = file_path.stem
+            delay_match = re.search(r"DELAY[_\s]+(-?\d+)ms", filename, re.IGNORECASE)
+            if delay_match:
+                delay = int(delay_match.group(1))
+
+        # if not an elementary file, only use delay if a specific track was selected
+        elif track_count > 1 and self.selected_track_id is not None:
+            # find track by track_id in audio_tracks array
+            for track in media_info.audio_tracks:
+                if track.track_id == self.selected_track_id:
+                    src_delay = track.source_delay
+                    reg_delay = track.delay
+                    if src_delay is not None:
+                        delay = int(src_delay)
+                    elif reg_delay is not None:
+                        delay = int(reg_delay)
+                    break
 
         self.delay_spinbox.setValue(delay)
 
@@ -123,6 +177,7 @@ class AudioTab(BaseTab[AudioState]):
                 title=self.title_entry.text().strip(),
                 delay_ms=self.delay_spinbox.value(),
                 default=self.default_checkbox.isChecked(),
+                track_id=self.selected_track_id,
             )
             if self.is_tab_ready()
             else None
@@ -132,6 +187,14 @@ class AudioTab(BaseTab[AudioState]):
     def is_tab_ready(self) -> bool:
         """Returns whether ready for muxing."""
         return bool(self.input_entry.text().strip())
+
+    @staticmethod
+    def _parse_mi_count(val: Any, default: int = 0) -> int:
+        """Parse media info count value to int, defaulting to 0."""
+        try:
+            return int(val)
+        except (TypeError, ValueError):
+            return default
 
 
 class MultiAudioTab(QWidget):
