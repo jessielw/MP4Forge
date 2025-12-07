@@ -155,14 +155,22 @@ class VideoMuxer:
                 video_opts += (
                     f":name={job.video.title}" if job.video.title else ":name="
                 )
-                if job.video.delay_ms != 0:
-                    video_opts += f":delay={job.video.delay_ms}"
+                video_opts += (
+                    f":delay={job.video.delay_ms}"
+                    if job.video.delay_ms != 0
+                    else ":delay="
+                )
                 cmd.extend(["-add", f"{job.video.input_file}{video_opts}"])
 
             # add audio tracks
             audio_defaults_set = any(audio.default for audio in job.audio_tracks)
             for audio in job.audio_tracks:
-                audio_opts = "#audio"
+                # use specific track_id if provided (for multi-track MP4), otherwise use #audio
+                if audio.track_id is not None:
+                    audio_opts = f"#{audio.track_id}"
+                else:
+                    audio_opts = "#audio"
+
                 if audio.language:
                     audio_opts += f":lang={audio.language.part3}"
                 audio_opts += f":name={audio.title}" if audio.title else ":name="
