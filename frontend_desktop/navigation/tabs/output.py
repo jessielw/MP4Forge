@@ -255,8 +255,8 @@ class OutputTab(QWidget):
 
         # reset all tabs after adding job
         video_tab.reset_tab()
-        audio_tabs.reset_all_tabs()
-        subtitle_tab.reset_all_tabs()
+        audio_tabs.multi_track.reset_to_single_tab()
+        subtitle_tab.multi_track.reset_to_single_tab()
         chapter_tab.reset_tab()
         self.output_entry.clear()
 
