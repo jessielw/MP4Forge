@@ -6,7 +6,6 @@ suitable for both desktop and web front-ends.
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional
 
 from iso639 import Language
 
@@ -16,7 +15,7 @@ class VideoState:
     """Video track state for muxing."""
 
     input_file: Path
-    language: Optional[Language] = None
+    language: Language | None = None
     title: str = ""
     delay_ms: int = 0
 
@@ -35,10 +34,11 @@ class AudioState:
     """Audio track state for muxing."""
 
     input_file: Path
-    language: Optional[Language] = None
+    language: Language | None = None
     title: str = ""
     delay_ms: int = 0
     default: bool = False
+    track_id: int | None = None  # for multi-track MP4 inputs
 
     def to_dict(self) -> dict:
         """Convert to dictionary for serialization."""
@@ -48,6 +48,7 @@ class AudioState:
             "title": self.title,
             "delay_ms": self.delay_ms,
             "default": self.default,
+            "track_id": self.track_id,
         }
 
 
@@ -56,7 +57,7 @@ class SubtitleState:
     """Subtitle track state for muxing."""
 
     input_file: Path
-    language: Optional[Language] = None
+    language: Language | None = None
     title: str = ""
     default: bool = False
     forced: bool = False
@@ -76,7 +77,7 @@ class SubtitleState:
 class ChapterState:
     """Chapter state for muxing."""
 
-    chapters: Optional[str] = None
+    chapters: str | None = None
 
     def to_dict(self) -> dict:
         """Convert to dictionary for serialization."""
