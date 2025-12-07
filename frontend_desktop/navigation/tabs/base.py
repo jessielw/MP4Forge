@@ -196,9 +196,11 @@ class BaseTab(QWidget, Generic[TState]):
 
     def _update_ui(self, media_info: MediaInfo, file_path: Path) -> None:
         """Updates the UI with the provided media info and file path."""
+        # load media info tree first - this sets selected_track_id for multi-track files
+        self._load_media_info_into_tree(media_info)
+        # then load metadata that depends on selected_track_id
         self._load_language(media_info)
         self._load_title(media_info)
-        self._load_media_info_into_tree(media_info)
         self._load_delay(media_info, file_path)
 
     def _parse_file_done(self) -> None:
