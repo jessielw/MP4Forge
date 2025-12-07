@@ -11,6 +11,7 @@ env/
 build/
 dist/
 *.spec
+pyinstaller_build/
 
 # IDE
 .vscode/
