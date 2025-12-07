@@ -116,6 +116,21 @@ class MultiTabbedTabWidget(QWidget):
                     widget, checked
                 )
             )
+            
+            # auto-check default if ANY other tab already has default checked
+            # this maintains the "default" flag across tabs when adding new ones
+            for other_widget in self.get_all_tab_widgets():
+                if other_widget is tab_widget:
+                    continue  # skip the newly created widget
+                other_default_checkbox: QCheckBox | None = getattr(
+                    other_widget, "default_checkbox", None
+                )
+                if other_default_checkbox and other_default_checkbox.isChecked():
+                    # found a tab with default checked - auto-check this one
+                    default_checkbox.blockSignals(True)
+                    default_checkbox.setChecked(True)
+                    default_checkbox.blockSignals(False)
+                    break  # only need to find one
 
         if switch_to:
             self.tabs.setCurrentIndex(idx)
@@ -253,3 +268,28 @@ class MultiTabbedTabWidget(QWidget):
             List of tab widgets
         """
         return [self.tabs.widget(i) for i in range(self.tabs.count() - 1)]
+
+    def reset_to_single_tab(self) -> None:
+        """
+        Reset to a single tab (remove all except first tab, keep plus tab).
+        Also resets the first tab if it has a reset_tab method.
+        """
+        # remove all tabs except the first one and the plus tab
+        self.tabs.blockSignals(True)
+        while self.tabs.count() > 2:  # keep first tab + plus tab
+            self.tabs.removeTab(1)  # always remove second tab
+        self.tabs.blockSignals(False)
+
+        # update plus tab index
+        self._plus_tab_idx = 1  # first tab is 0, plus tab is 1
+
+        # reset the first tab if it has a reset method
+        first_tab = self.tabs.widget(0)
+        if first_tab and hasattr(first_tab, "reset_tab"):
+            first_tab.reset_tab()  # type: ignore
+
+        # update tab label
+        self.tabs.setTabText(0, f"{self.tab_name} 1")
+
+        # switch to first tab
+        self.tabs.setCurrentIndex(0)
