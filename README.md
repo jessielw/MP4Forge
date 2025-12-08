@@ -2,6 +2,9 @@
 
 A modern MP4 muxing tool with a desktop GUI interface, powered by MP4Box.
 
+<img width="270" alt="image" src="https://github.com/user-attachments/assets/d390faf3-7a9f-4431-894b-bb1c7db2ec84" />
+
+
 ## Features
 
 ### Current Features (v2.0.0-rc)
