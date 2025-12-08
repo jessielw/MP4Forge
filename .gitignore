@@ -27,3 +27,4 @@ Thumbs.db
 
 # runtime
 runtime/
+!runtime/images/
