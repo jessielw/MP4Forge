@@ -12,7 +12,9 @@ dependencies = [
 [project.optional-dependencies]
 # core
 core = [
+    "platformdirs",
     "python-iso639>=2025.11.11",
+    "python-dotenv",
     "pymediainfo",
     "typing_extensions",
     "tomlkit",
@@ -50,6 +52,7 @@ dev = [
     "uvicorn[standard]>=0.31.0",
     "pyinstaller>=6.0.0",
     "debugpy",
+    "ruff",
 ]
 
 [build-system]
@@ -62,6 +65,7 @@ packages = ["core", "frontend_desktop", "backend"]
 [tool.ruff]
 line-length = 88
 target-version = "py39"
+include = ["core/**/*.py", "frontend_desktop/**/*.py", "backend/**/*.py"]
 
 [tool.ruff.lint]
 select = ["I", "UP"]
