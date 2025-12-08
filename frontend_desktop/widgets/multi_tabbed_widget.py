@@ -116,7 +116,7 @@ class MultiTabbedTabWidget(QWidget):
                     widget, checked
                 )
             )
-            
+
             # auto-check default if ANY other tab already has default checked
             # this maintains the "default" flag across tabs when adding new ones
             for other_widget in self.get_all_tab_widgets():
