@@ -120,29 +120,29 @@ jobs:
           name: Mp4Forge-Linux
           path: ./dist/linux
 
-    - name: Create archives
-      run: |
-        mkdir -p archives
-        mv dist/windows Mp4Forge
-        zip -r archives/Mp4Forge-Windows.zip Mp4Forge
-        mv Mp4Forge dist/windows
-        
-        mv dist/macos Mp4Forge
-        zip -r archives/Mp4Forge-macOS.zip Mp4Forge
-        mv Mp4Forge dist/macos
-        
-        mv dist/linux Mp4Forge
-        tar czf archives/Mp4Forge-Linux.tar.gz Mp4Forge
-        mv Mp4Forge dist/linux
-    
-    - name: Create Release
-      uses: softprops/action-gh-release@v2
-      with:
-        files: |
-          archives/Mp4Forge-Windows.zip
-          archives/Mp4Forge-macOS.zip
-          archives/Mp4Forge-Linux.tar.gz
-        draft: true
-        prerelease: ${{ contains(github.ref, 'rc') || contains(github.ref, 'beta') || contains(github.ref, 'alpha') }}
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Create archives
+        run: |
+          mkdir -p archives
+          mv dist/windows Mp4Forge
+          zip -r archives/Mp4Forge-Windows.zip Mp4Forge
+          mv Mp4Forge dist/windows
+
+          mv dist/macos Mp4Forge
+          zip -r archives/Mp4Forge-macOS.zip Mp4Forge
+          mv Mp4Forge dist/macos
+
+          mv dist/linux Mp4Forge
+          tar czf archives/Mp4Forge-Linux.tar.gz Mp4Forge
+          mv Mp4Forge dist/linux
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            archives/Mp4Forge-Windows.zip
+            archives/Mp4Forge-macOS.zip
+            archives/Mp4Forge-Linux.tar.gz
+          draft: true
+          prerelease: ${{ contains(github.ref, 'rc') || contains(github.ref, 'beta') || contains(github.ref, 'alpha') }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
