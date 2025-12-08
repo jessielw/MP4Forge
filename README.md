@@ -12,8 +12,7 @@ A modern MP4 muxing tool with a desktop GUI interface, powered by MP4Box.
 - **Audio delay**: Support for audio delay values (automatically detected from filenames or MediaInfo)
 - **Chapter support**: Import chapters from OGM/XML files or other MP4 containers
 - **Queue system**: Build and manage multiple muxing jobs in a queue
-- **Auto QPF integration**: Automatic quality-based encoding suggestions via [AutoQPF](https://github.com/Aetopia/AutoQPF)
-- **Cross-platform**: Available for Windows, macOS, and Linux
+- **Cross-platform**: Available for Windows (8+ x64), macOS, and Linux
 - **Theme support**: Light, dark, and auto themes
 - **Persistent configuration**: Settings stored in OS-appropriate locations (portable mode available)
 
