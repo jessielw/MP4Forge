@@ -141,5 +141,4 @@ See [LICENSE](LICENSE) for details.
 ## Credits
 
 - Powered by [GPAC/MP4Box](https://gpac.io/)
-- Uses [AutoQPF](https://github.com/Aetopia/AutoQPF) for quality presets
 - Built with [PySide6](https://wiki.qt.io/Qt_for_Python)
