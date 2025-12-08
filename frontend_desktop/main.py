@@ -1,7 +1,9 @@
 import sys
 import traceback
+from pathlib import Path
 
 from PySide6.QtCore import Qt, QtMsgType, Slot, qInstallMessageHandler
+from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import (
     QApplication,
     QHBoxLayout,
@@ -13,6 +15,7 @@ from PySide6.QtWidgets import (
 
 from core.config import Conf
 from core.logger import LOG
+from core.utils.working_dir import RUNTIME_DIR
 from frontend_desktop.global_signals import GSigs
 from frontend_desktop.navigation.nav import NavigationTabs
 from frontend_desktop.navigation.tabs.base import BaseTab
@@ -158,6 +161,7 @@ class MainWindow(QMainWindow):
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
+    app.setWindowIcon(QIcon(str(RUNTIME_DIR / "images" / "mp4mux.png")))
     app.setStyle("Fusion")
     window = MainWindow()
     window.show()
