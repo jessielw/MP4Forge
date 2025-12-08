@@ -1,5 +1,6 @@
 import os
 import platform
+import shutil
 from pathlib import Path
 from subprocess import run
 
@@ -22,13 +23,20 @@ def get_executable_extension() -> str:
 
 
 def build_app():
+    # change directory to the project's root directory
+    project_root = Path(__file__).parent
+    os.chdir(project_root)
+
     # define and create pyinstaller output path
-    pyinstaller_folder = Path(Path(__file__).parent / "pyinstaller_build")
+    pyinstaller_folder = Path(project_root / "pyinstaller_build")
     pyinstaller_folder.mkdir(exist_ok=True)
 
+    # dev runtime path to pull into final package
+    dev_runtime = project_root / "runtime"
+
     # define paths before changing directory
-    desktop_script = Path(Path.cwd() / "frontend_desktop" / "main.py")
-    # icon_path = Path(Path.cwd() / "icon" / "icon.ico")
+    desktop_script = Path(project_root / "frontend_desktop" / "main.py")
+    icon_path = Path(dev_runtime / "images" / "mp4mux.ico")
 
     # get extra deps
     # site_packages = get_site_packages()
@@ -61,13 +69,33 @@ def build_app():
             "Mp4Forge",
             "--distpath",
             "bundled_mode",
+            f"--add-data={dev_runtime}:runtime",
             "--contents-directory",
             "bundle",
-            # f"--icon={str(icon_path)}",
+            "--windowed",
+            f"--icon={str(icon_path)}",
             "-y",
             str(desktop_script),
         ]
     )
+
+    # cleanse included runtime folder of unneeded files
+    # whitelist of runtime subdirectories to keep in the bundled build
+    RUNTIME_WHITELIST = (
+        "images",
+        # add more subdirectories here if needed
+    )
+
+    # bundled_runtime = Path(desktop_script.parent / "bundle" / "runtime")
+    bundled_runtime = Path("bundled_mode") / "Mp4Forge" / "bundle" / "runtime"
+    if bundled_runtime.exists():
+        for item in bundled_runtime.iterdir():
+            if item.is_dir() and item.name not in RUNTIME_WHITELIST:
+                shutil.rmtree(item)
+                print(f"Removed: {item.name}")
+            elif item.is_file():
+                item.unlink()
+                print(f"Removed: {item.name}")
 
     exe_str = get_executable_extension()
     success_msgs = []
