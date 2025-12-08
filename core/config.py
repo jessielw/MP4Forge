@@ -3,17 +3,23 @@ from pathlib import Path
 from typing import Any
 
 import tomlkit
+from dotenv import load_dotenv
 from tomlkit.toml_document import TOMLDocument
 
 from core.logger import LogLevel
-from core.utils.working_dir import RUNTIME_DIR
+from core.utils.working_dir import CONFIG_DIR
+
+load_dotenv()
 
 
 class Config:
     """Configuration manager using TOML for persistence"""
 
+    # increment when breaking changes are made
+    CONFIG_VERSION = 1
+
     def __init__(self, config_path: Path | None = None) -> None:
-        self.config_path = config_path or RUNTIME_DIR / "config.toml"
+        self.config_path = config_path or CONFIG_DIR / "config.toml"
         self.config_path.parent.mkdir(parents=True, exist_ok=True)
         self._config: TOMLDocument = self._load()
 
@@ -21,7 +27,19 @@ class Config:
         """Load configuration from file or create default"""
         if self.config_path.exists():
             with open(self.config_path, encoding="utf-8") as f:
-                return tomlkit.load(f)
+                doc = tomlkit.load(f)
+
+            # check config version compatibility
+            config_version = doc.get("general", {}).get("config_version", 0)
+            if config_version != self.CONFIG_VERSION:
+                # version mismatch - backup old config and create new one
+                backup_path = self.config_path.with_suffix(
+                    f".toml.v{config_version}.bak"
+                )
+                self.config_path.rename(backup_path)
+                return self._create_default()
+
+            return doc
         return self._create_default()
 
     def _create_default(self) -> TOMLDocument:
@@ -32,6 +50,7 @@ class Config:
 
         # general settings
         general = tomlkit.table()
+        general.add("config_version", self.CONFIG_VERSION)
         general.add("log_level", "INFO")
         general.add("theme", "Auto")
         general.add("mp4box_path", "")
