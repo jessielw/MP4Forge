@@ -29,6 +29,7 @@ class TrackImportDialog(QDialog):
             "audio": [],
             "subtitle": [],
             "chapters": False,  # boolean since there's only one chapters track
+            "imported_track_count": 0,
         }
         self._setup_ui()
         self._load_tracks()
@@ -198,6 +199,7 @@ class TrackImportDialog(QDialog):
 
     def accept(self) -> None:
         """Collect selected tracks before accepting."""
+        imported_track_count = 0
         for row in range(self.track_table.rowCount()):
             checkbox = self.track_table.cellWidget(row, 0)
             if isinstance(checkbox, QCheckBox) and checkbox.isChecked():
@@ -207,6 +209,8 @@ class TrackImportDialog(QDialog):
                 else:
                     track_id = checkbox.property("track_id")
                     self.selected_tracks[track_type].append(track_id)
+                imported_track_count += 1
+        self.selected_tracks["imported_track_count"] = imported_track_count
         super().accept()
 
     def get_selected_tracks(self) -> dict[str, list[int]]:
