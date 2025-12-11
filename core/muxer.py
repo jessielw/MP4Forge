@@ -189,7 +189,13 @@ class VideoMuxer:
             # add subtitle tracks with default/forced logic
             subtitle_defaults_set = any(sub.default for sub in job.subtitle_tracks)
             for subtitle in job.subtitle_tracks:
-                subtitle_opts = ""
+                # determine track selector (for multi-track MP4 inputs)
+                if subtitle.track_id is not None:
+                    track_selector = f"#{subtitle.track_id}"
+                else:
+                    track_selector = "#text"  # default to first text track
+                
+                subtitle_opts = track_selector
                 if subtitle.language:
                     subtitle_opts += f":lang={subtitle.language.part3}"
                 subtitle_opts += (
