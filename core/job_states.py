@@ -61,6 +61,7 @@ class SubtitleState:
     title: str = ""
     default: bool = False
     forced: bool = False
+    track_id: int | None = None  # for multi-track MP4 inputs
 
     def to_dict(self) -> dict:
         """Convert to dictionary for serialization."""
@@ -70,6 +71,7 @@ class SubtitleState:
             "title": self.title,
             "default": self.default,
             "forced": self.forced,
+            "track_id": self.track_id,
         }
 
 
