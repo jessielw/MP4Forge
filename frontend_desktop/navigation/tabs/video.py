@@ -2,7 +2,7 @@ from pathlib import Path
 
 from pymediainfo import MediaInfo
 from PySide6.QtCore import Slot
-from PySide6.QtWidgets import QTreeWidgetItem
+from PySide6.QtWidgets import QMessageBox, QTreeWidgetItem
 from typing_extensions import override
 
 from core.job_states import VideoState
@@ -50,6 +50,21 @@ class VideoTab(BaseTab[VideoState]):
 
         # detect title if exists in the mediainfo
         v_track = media_info.video_tracks[0] if media_info.video_tracks else None
+
+        # if no video track found show error and return
+        if not v_track:
+            failure_msg = f"No video track found in file: {file_path}"
+            LOG.critical(failure_msg, LOG.SRC.FE)
+            QMessageBox.critical(
+                self,
+                "No Video Track Found",
+                failure_msg,
+            )
+            self._parse_file_done()
+            self.reset_tab()
+            return
+
+        # load title if exists
         if v_track and v_track.title:
             self.title_entry.setText(v_track.title)
 
