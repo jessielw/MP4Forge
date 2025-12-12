@@ -125,6 +125,9 @@ class TrackImportDialog(QDialog):
         # checkbox for import
         checkbox = QCheckBox()
         checkbox.setChecked(True)  # default checked
+        # disable video track checkbox - video must be imported
+        if track_type == "Video":
+            checkbox.setEnabled(False)
         checkbox.setProperty("track_type", track_type.lower())
         checkbox.setProperty("track_id", track.track_id)
         self.track_table.setCellWidget(row, 0, checkbox)
