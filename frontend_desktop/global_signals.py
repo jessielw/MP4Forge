@@ -17,6 +17,16 @@ class GlobalSignals(QObject):
     # chapters
     chapters_updated = Signal(str)
 
+    # video audio tracks
+    video_audio_tracks_detected = Signal(
+        object, object, list
+    )  # MediaInfo, Path, selected_track_ids
+
+    # video subtitle tracks
+    video_subtitle_tracks_detected = Signal(
+        object, object, list
+    )  # MediaInfo, Path, selected_track_ids
+
     # scaling # TODO: add this feature in
     # scale_factor_changed_by_user = Signal(float)  # user hotkey changes (auto-save)
     # scale_factor_changed = Signal(float)  # all changes (UI sync)
