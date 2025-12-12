@@ -12,6 +12,7 @@ from PySide6.QtWidgets import (
     QHBoxLayout,
     QLabel,
     QLineEdit,
+    QMessageBox,
     QPushButton,
     QSpinBox,
     QTreeWidget,
@@ -19,6 +20,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from core.logger import LOG
 from core.utils.mediainfo import get_media_info
 from frontend_desktop.global_signals import GSigs
 from frontend_desktop.utils.general_worker import GeneralWorker
@@ -190,8 +192,13 @@ class BaseTab(QWidget, Generic[TState]):
     def _on_media_info_failed(self, error_message: str) -> None:
         """Handles the media info worker failed signal."""
         # handle media info error
-        # TODO: display the error in the UI either via a GSIG global or per widget?
-        print("Media info retrieval failed:", error_message)
+        failure_msg = f"Media info retrieval failed: {error_message}"
+        LOG.critical(failure_msg, LOG.SRC.FE)
+        QMessageBox.critical(
+            self,
+            "MediaInfo Error",
+            failure_msg,
+        )
         self._parse_file_done()
 
     def _update_ui(self, media_info: MediaInfo, file_path: Path) -> None:
@@ -202,6 +209,12 @@ class BaseTab(QWidget, Generic[TState]):
         self._load_language(media_info)
         self._load_title(media_info)
         self._load_delay(media_info, file_path)
+
+        # load default/forced flags if method exists (for audio/subtitle tabs)
+        if hasattr(self, "_load_default_flag"):
+            self._load_default_flag(media_info)  # type: ignore
+        if hasattr(self, "_load_forced_flag"):
+            self._load_forced_flag(media_info)  # type: ignore
 
     def _parse_file_done(self) -> None:
         """Cleans up UI after file parsing is done."""
