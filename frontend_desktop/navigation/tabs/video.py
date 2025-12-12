@@ -6,10 +6,12 @@ from PySide6.QtWidgets import QTreeWidgetItem
 from typing_extensions import override
 
 from core.job_states import VideoState
+from core.logger import LOG
 from core.utils.autoqpf import auto_gen_chapters
 from core.utils.language import get_full_language_str
 from frontend_desktop.global_signals import GSigs
 from frontend_desktop.navigation.tabs.base import BaseTab
+from frontend_desktop.widgets.track_import_dialog import TrackImportDialog
 
 
 class VideoTab(BaseTab[VideoState]):
@@ -51,13 +53,56 @@ class VideoTab(BaseTab[VideoState]):
         if v_track and v_track.title:
             self.title_entry.setText(v_track.title)
 
-        # we will attempt to extract chapters if they exist, ignoring any errors silently
-        try:
-            chapters = auto_gen_chapters(media_info)
-            if chapters:
-                GSigs().chapters_updated.emit(chapters)
-        except Exception:
-            pass
+        # show track import dialog only for mp4/m4v files with audio/subtitle/chapter tracks
+        is_mp4 = file_path.suffix.lower() in (".mp4", ".m4v")
+        has_audio = bool(media_info.audio_tracks)
+        has_subs = bool(media_info.text_tracks)
+        has_chapters = bool(media_info.menu_tracks)
+
+        if is_mp4 and (has_audio or has_subs or has_chapters):
+            dialog = TrackImportDialog(file_path, media_info, parent=self)
+            if dialog.exec():
+                selected = dialog.get_selected_tracks()
+
+                # emit signals for selected tracks
+                if selected["audio"]:
+                    GSigs().video_audio_tracks_detected.emit(
+                        media_info, file_path, selected["audio"]
+                    )
+
+                if selected["subtitle"]:
+                    GSigs().video_subtitle_tracks_detected.emit(
+                        media_info, file_path, selected["subtitle"]
+                    )
+
+                # extract and emit chapters only if selected
+                if selected["chapters"]:
+                    try:
+                        chapters = auto_gen_chapters(media_info)
+                        if chapters:
+                            GSigs().chapters_updated.emit(chapters)
+                    except Exception:
+                        pass
+
+                # show status tip about imported tracks
+                LOG.info(
+                    f"Imported {selected['total_tracks']} tracks from video file: {file_path}",
+                    LOG.SRC.FE,
+                )
+                LOG.debug(f"Imported tracks detail: {selected}", LOG.SRC.FE)
+
+            # if user cancels, we just don't import audio/subs/chapters
+        else:
+            # non-MP4 or no extra tracks - just try to extract chapters anyway
+            try:
+                chapters = auto_gen_chapters(media_info)
+                if chapters:
+                    GSigs().chapters_updated.emit(chapters)
+            except Exception:
+                LOG.debug(
+                    "Failed to auto-generate chapters from video file", LOG.SRC.FE
+                )
+
         self._update_ui(media_info, file_path)
         self._parse_file_done()
 
