@@ -86,7 +86,7 @@ class VideoTab(BaseTab[VideoState]):
 
                 # show status tip about imported tracks
                 LOG.info(
-                    f"Imported {selected['total_tracks']} tracks from video file: {file_path}",
+                    f"Imported {selected['imported_track_count']} tracks from video file: {file_path}",
                     LOG.SRC.FE,
                 )
                 LOG.debug(f"Imported tracks detail: {selected}", LOG.SRC.FE)
