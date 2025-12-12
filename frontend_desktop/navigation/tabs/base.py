@@ -14,6 +14,7 @@ from PySide6.QtWidgets import (
     QLineEdit,
     QMessageBox,
     QPushButton,
+    QScrollArea,
     QSpinBox,
     QTreeWidget,
     QVBoxLayout,
@@ -119,24 +120,37 @@ class BaseTab(QWidget, Generic[TState]):
         # media info tree
         self.media_info_tree_lbl = QLabel("MediaInfo", self)
         self.media_info_tree = QTreeWidget(self, columnCount=2)
+        self.media_info_tree.setMinimumHeight(350)
         self.media_info_tree.setFrameShape(QFrame.Shape.Box)
         self.media_info_tree.setFrameShadow(QFrame.Shadow.Sunken)
-        self.media_info_tree.setHeaderLabels(["Property", "Value"])
+        self.media_info_tree.setHeaderLabels(("Property", "Value"))
         self.media_info_tree.setRootIsDecorated(False)
         self.media_info_tree.setIndentation(0)
 
-        # main layout
+        # create scrollable content widget
+        content_widget = QWidget()
+        content_layout = QVBoxLayout(content_widget)
+        content_layout.addLayout(row_1_layout)
+        content_layout.addWidget(self.lang_lbl)
+        content_layout.addWidget(self.lang_combo)
+        content_layout.addWidget(self.title_lbl)
+        content_layout.addWidget(self.title_entry)
+        content_layout.addWidget(self.delay_lbl)
+        content_layout.addWidget(self.delay_spinbox)
+        content_layout.addLayout(flags_layout)
+        content_layout.addWidget(self.media_info_tree_lbl)
+        content_layout.addWidget(self.media_info_tree, stretch=1)
+
+        # wrap content in scroll area
+        scroll_area = QScrollArea(self)
+        scroll_area.setWidget(content_widget)
+        scroll_area.setWidgetResizable(True)
+        scroll_area.setFrameShape(QFrame.Shape.NoFrame)
+
+        # main layout just contains the scroll area
         self.main_layout = QVBoxLayout(self)
-        self.main_layout.addLayout(row_1_layout)
-        self.main_layout.addWidget(self.lang_lbl)
-        self.main_layout.addWidget(self.lang_combo)
-        self.main_layout.addWidget(self.title_lbl)
-        self.main_layout.addWidget(self.title_entry)
-        self.main_layout.addWidget(self.delay_lbl)
-        self.main_layout.addWidget(self.delay_spinbox)
-        self.main_layout.addLayout(flags_layout)
-        self.main_layout.addWidget(self.media_info_tree_lbl)
-        self.main_layout.addWidget(self.media_info_tree, stretch=1)
+        self.main_layout.setContentsMargins(0, 0, 0, 0)
+        self.main_layout.addWidget(scroll_area)
 
     def _configure_file_filters(self) -> None:
         """Configure file filters for drag-and-drop and file dialog."""
