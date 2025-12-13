@@ -66,8 +66,6 @@ class BaseTab(QWidget, Generic[TState]):
         self.input_entry = DNDPlainTextEdit(
             self, readOnly=True, placeholderText="Open file..."
         )
-        self.input_entry.setFrameShape(QFrame.Shape.Box)
-        self.input_entry.setFrameShadow(QFrame.Shadow.Sunken)
         self.input_entry.setToolTip("Open file...")
         # prevent expanding vertically too much
         self.input_entry.setSizePolicy(
