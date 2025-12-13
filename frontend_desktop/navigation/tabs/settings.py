@@ -82,7 +82,6 @@ class SettingsTab(QWidget):
 
         # content layout
         content_layout = QVBoxLayout(content_widget)
-        content_layout.setContentsMargins(0, 0, 9, 0)
         content_layout.addWidget(theme_lbl)
         content_layout.addWidget(self.theme_combo)
         content_layout.addWidget(log_level_lbl)
