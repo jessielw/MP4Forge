@@ -14,6 +14,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Adjusted the spacing in the nav panel
+- Input box is now larger and wraps text to show more data
+  - Adjusted input/delete buttons to stack on the right of the input widget
 
 ### Fixed
 
