@@ -70,7 +70,7 @@ class SettingsTab(QWidget):
         self.mp4box_line_edit = QLineEdit(content_widget, readOnly=True)
         self.mp4box_line_edit.setText(Conf.mp4box_path)
         mp4box_btn = QToolButton(content_widget)
-        QTAThemeSwap().register(mp4box_btn, "ph.file-arrow-down", QSize(20, 20))
+        QTAThemeSwap().register(mp4box_btn, "ph.file-arrow-up", QSize(20, 20))
         mp4box_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         mp4box_btn.clicked.connect(self._browse_mp4box)
 
