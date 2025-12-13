@@ -1,6 +1,5 @@
 import sys
 import traceback
-from pathlib import Path
 
 from PySide6.QtCore import Qt, QTimer, QtMsgType, Slot, qInstallMessageHandler
 from PySide6.QtGui import QIcon
@@ -177,7 +176,7 @@ class MainWindow(QMainWindow):
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
-    app.setWindowIcon(QIcon(str(RUNTIME_DIR / "images" / "mp4mux.png")))
+    app.setWindowIcon(QIcon(str(RUNTIME_DIR / "images" / "mp4.png")))
     app.setStyle("Fusion")
     window = MainWindow()
     window.show()

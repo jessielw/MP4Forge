@@ -36,7 +36,7 @@ def build_app():
 
     # define paths before changing directory
     desktop_script = Path(project_root / "frontend_desktop" / "main.py")
-    icon_path = Path(dev_runtime / "images" / "mp4mux.ico")
+    icon_path = Path(dev_runtime / "images" / "mp4.ico")
 
     # get extra deps
     # site_packages = get_site_packages()
