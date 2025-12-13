@@ -66,7 +66,7 @@ class AudioTab(BaseTab[AudioState]):
                     self.lang_combo.setCurrentIndex(index)
         else:
             # fallback: try to detect language from filename
-            file_path = Path(self.input_entry.text().strip())
+            file_path = Path(self.input_entry.toPlainText().strip())
             detected_lang = detect_language_from_filename(file_path.name)
             if detected_lang:
                 full_lang = detected_lang.name
@@ -118,7 +118,7 @@ class AudioTab(BaseTab[AudioState]):
             return
 
         # check if MP4 with multiple audio tracks
-        file_path = Path(self.input_entry.text().strip())
+        file_path = Path(self.input_entry.toPlainText().strip())
         is_mp4 = file_path.suffix.lower() in (".mp4", ".m4a")
 
         if (
@@ -210,7 +210,7 @@ class AudioTab(BaseTab[AudioState]):
         """Exports the current state."""
         return (
             AudioState(
-                input_file=Path(self.input_entry.text().strip()),
+                input_file=Path(self.input_entry.toPlainText().strip()),
                 language=self.lang_combo.currentData(),
                 title=self.title_entry.text().strip(),
                 delay_ms=self.delay_spinbox.value(),
@@ -224,7 +224,7 @@ class AudioTab(BaseTab[AudioState]):
     @override
     def is_tab_ready(self) -> bool:
         """Returns whether ready for muxing."""
-        return bool(self.input_entry.text().strip())
+        return bool(self.input_entry.toPlainText().strip())
 
     @staticmethod
     def _parse_mi_count(val: Any, default: int = 0) -> int:

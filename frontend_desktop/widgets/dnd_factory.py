@@ -3,7 +3,7 @@ from pathlib import Path
 
 from PySide6.QtCore import Signal
 from PySide6.QtGui import QDragEnterEvent, QDragMoveEvent, QDropEvent
-from PySide6.QtWidgets import QLineEdit, QPushButton, QToolButton
+from PySide6.QtWidgets import QLineEdit, QPlainTextEdit, QPushButton, QToolButton
 
 
 class DNDMixin:
@@ -77,6 +77,12 @@ class DNDToolButton(DNDMixin, QToolButton):
 
 
 class DNDPushButton(DNDMixin, QPushButton):
+    def __init__(self, parent=None, **kwargs):
+        super().__init__(parent=parent, **kwargs)
+        self.setAcceptDrops(True)
+
+
+class DNDPlainTextEdit(DNDMixin, QPlainTextEdit):
     def __init__(self, parent=None, **kwargs):
         super().__init__(parent=parent, **kwargs)
         self.setAcceptDrops(True)

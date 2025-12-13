@@ -5,7 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [2.0.0-rc2] - 2025-12-07
+## [2.0.0-rc3] - 2025-12-??
+
+### Added
+
+- Ability to scroll through the tabs on the left hand side when the mouse is hovering in the nav panel
+
+### Changed
+
+- Adjusted the spacing in the nav panel
+- Input box is now larger and wraps text to show more data
+  - Adjusted input/delete buttons to stack on the right of the input widget
+- Disabled scroll wheel for language combo box
+- Improved the Output tab layout/visuals
+- Update to PySide6 v6.10.1
+
+### Fixed
+
+- Chapter tab layout now pushes widgets to the top
+- Layout issues with subtitles, video tab, chapters, and output tabs
+
+## [2.0.0-rc2] - 2025-12-12
 
 ### Added
 

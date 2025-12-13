@@ -15,6 +15,7 @@ from PySide6.QtWidgets import (
     QMessageBox,
     QPushButton,
     QScrollArea,
+    QSizePolicy,
     QSpinBox,
     QTreeWidget,
     QVBoxLayout,
@@ -26,7 +27,7 @@ from core.utils.mediainfo import get_media_info
 from frontend_desktop.context import context
 from frontend_desktop.global_signals import GSigs
 from frontend_desktop.utils.general_worker import GeneralWorker
-from frontend_desktop.widgets.dnd_factory import DNDLineEdit, DNDPushButton
+from frontend_desktop.widgets.dnd_factory import DNDPlainTextEdit, DNDPushButton
 from frontend_desktop.widgets.lang_combo import get_language_combo_box
 from frontend_desktop.widgets.qtawesome_theme_swapper import QTAThemeSwap
 from frontend_desktop.widgets.utils import cancel_scroll_event
@@ -61,6 +62,16 @@ class BaseTab(QWidget, Generic[TState]):
         # media info worker
         self._media_info_worker: GeneralWorker | None = None
 
+        # input file entry with drag-and-drop support
+        self.input_entry = DNDPlainTextEdit(
+            self, readOnly=True, placeholderText="Open file..."
+        )
+        self.input_entry.setToolTip("Open file...")
+        # prevent expanding vertically too much
+        self.input_entry.setSizePolicy(
+            QSizePolicy.Policy.MinimumExpanding, QSizePolicy.Policy.Maximum
+        )
+
         # open file button
         self.open_file_btn = DNDPushButton(self)
         self.open_file_btn.setCursor(Qt.CursorShape.PointingHandCursor)
@@ -69,11 +80,6 @@ class BaseTab(QWidget, Generic[TState]):
             self.open_file_btn, "ph.file-arrow-up", icon_size=QSize(24, 24)
         )
         self.open_file_btn.clicked.connect(self._open_file_dialog)
-
-        # input file entry
-        self.input_entry = DNDLineEdit(self, readOnly=True)
-        self.input_entry.setToolTip("Open file...")
-        self.input_entry.setPlaceholderText(self.input_entry.toolTip())
 
         # enable drag and drop for input widgets
         self._configure_file_filters()
@@ -89,11 +95,16 @@ class BaseTab(QWidget, Generic[TState]):
         QTAThemeSwap().register(self.reset_tab_btn, "ph.trash", icon_size=QSize(24, 24))
         self.reset_tab_btn.clicked.connect(self._reset_tab_clicked)
 
+        # row 1 button layout
+        row_1_btn_layout = QVBoxLayout()
+        row_1_btn_layout.addWidget(self.open_file_btn)
+        row_1_btn_layout.addWidget(self.reset_tab_btn)
+
+        # row 1 layout
         row_1_layout = QHBoxLayout()
         row_1_layout.setContentsMargins(0, 0, 0, 0)
-        row_1_layout.addWidget(self.open_file_btn)
-        row_1_layout.addWidget(self.input_entry, stretch=1)
-        row_1_layout.addWidget(self.reset_tab_btn)
+        row_1_layout.addWidget(self.input_entry)
+        row_1_layout.addLayout(row_1_btn_layout)
 
         # language selection
         self.lang_lbl = QLabel("Language", self)
@@ -130,28 +141,27 @@ class BaseTab(QWidget, Generic[TState]):
 
         # create scrollable content widget
         content_widget = QWidget()
-        content_layout = QVBoxLayout(content_widget)
-        content_layout.addLayout(row_1_layout)
-        content_layout.addWidget(self.lang_lbl)
-        content_layout.addWidget(self.lang_combo)
-        content_layout.addWidget(self.title_lbl)
-        content_layout.addWidget(self.title_entry)
-        content_layout.addWidget(self.delay_lbl)
-        content_layout.addWidget(self.delay_spinbox)
-        content_layout.addLayout(flags_layout)
-        content_layout.addWidget(self.media_info_tree_lbl)
-        content_layout.addWidget(self.media_info_tree, stretch=1)
+        self.content_layout = QVBoxLayout(content_widget)
+        self.content_layout.addLayout(row_1_layout)
+        self.content_layout.addWidget(self.lang_lbl)
+        self.content_layout.addWidget(self.lang_combo)
+        self.content_layout.addWidget(self.title_lbl)
+        self.content_layout.addWidget(self.title_entry)
+        self.content_layout.addWidget(self.delay_lbl)
+        self.content_layout.addWidget(self.delay_spinbox)
+        self.content_layout.addLayout(flags_layout)
+        self.content_layout.addWidget(self.media_info_tree_lbl)
+        self.content_layout.addWidget(self.media_info_tree, stretch=1)
 
         # wrap content in scroll area
-        scroll_area = QScrollArea(self)
-        scroll_area.setWidget(content_widget)
-        scroll_area.setWidgetResizable(True)
-        scroll_area.setFrameShape(QFrame.Shape.NoFrame)
+        self.scroll_area = QScrollArea(self, widgetResizable=True)
+        self.scroll_area.setWidget(content_widget)
+        self.scroll_area.setFrameShape(QFrame.Shape.NoFrame)
 
         # main layout just contains the scroll area
         self.main_layout = QVBoxLayout(self)
         self.main_layout.setContentsMargins(0, 0, 0, 0)
-        self.main_layout.addWidget(scroll_area)
+        self.main_layout.addWidget(self.scroll_area)
 
     def _configure_file_filters(self) -> None:
         """Configure file filters for drag-and-drop and file dialog."""
@@ -183,7 +193,7 @@ class BaseTab(QWidget, Generic[TState]):
         drop_path = Path(file_paths[0]).resolve()
         context.last_used_path = drop_path.parent
         str_drop = str(drop_path)
-        self.input_entry.setText(str_drop)
+        self.input_entry.setPlainText(str_drop)
         self.input_entry.setToolTip(str_drop)
 
         # run media info worker

@@ -47,7 +47,7 @@ class SubtitleTab(BaseTab[SubtitleState]):
                     self.lang_combo.setCurrentIndex(index)
         else:
             # fallback: try to detect language from filename
-            file_path = Path(self.input_entry.text().strip())
+            file_path = Path(self.input_entry.toPlainText().strip())
             detected_lang = detect_language_from_filename(file_path.name)
             if detected_lang:
                 full_lang = detected_lang.name
@@ -85,7 +85,7 @@ class SubtitleTab(BaseTab[SubtitleState]):
             return
 
         # check if MP4 with multiple subtitle tracks
-        file_path = Path(self.input_entry.text().strip())
+        file_path = Path(self.input_entry.toPlainText().strip())
         is_mp4 = file_path.suffix.lower() in (".mp4", ".m4v")
 
         if (
@@ -166,7 +166,7 @@ class SubtitleTab(BaseTab[SubtitleState]):
 
         # for non-MP4 files (like SRT), check filename for forced/foreign indicators
         if not is_forced:
-            file_path = Path(self.input_entry.text().strip())
+            file_path = Path(self.input_entry.toPlainText().strip())
             if file_path.suffix.lower() not in (".mp4", ".m4v"):
                 filename_lower = file_path.name.lower()
                 if "forced" in filename_lower or "foreign" in filename_lower:
@@ -178,7 +178,7 @@ class SubtitleTab(BaseTab[SubtitleState]):
         """Exports the current state."""
         return (
             SubtitleState(
-                input_file=Path(self.input_entry.text().strip()),
+                input_file=Path(self.input_entry.toPlainText().strip()),
                 language=self.lang_combo.currentData(),
                 title=self.title_entry.text().strip(),
                 default=self.default_checkbox.isChecked(),
@@ -192,7 +192,7 @@ class SubtitleTab(BaseTab[SubtitleState]):
     @override
     def is_tab_ready(self) -> bool:
         """Returns whether ready for muxing."""
-        return bool(self.input_entry.text().strip())
+        return bool(self.input_entry.toPlainText().strip())
 
 
 class MultiSubtitleTab(QWidget):
@@ -224,7 +224,7 @@ class MultiSubtitleTab(QWidget):
         sub_tab.delay_spinbox.hide()
         sub_tab.media_info_tree_lbl.hide()
         sub_tab.media_info_tree.hide()
-        sub_tab.main_layout.addStretch()
+        sub_tab.content_layout.addStretch()
 
     def export_all_subtitle_states(self) -> list[SubtitleState]:
         """Export states from all subtitle track tabs (only tabs with input files)."""

@@ -26,7 +26,7 @@ core = [
 
 # desktop GUI
 desktop = [
-    "pyside6==6.8.3",
+    "pyside6==6.10.1",
     "qtawesome>=1.4.0",
     "python-iso639>=2025.11.11",
     "pymediainfo",
@@ -46,7 +46,7 @@ desktop = [
 
 # all dependencies (for development)
 dev = [
-    "pyside6==6.8.3",
+    "pyside6==6.10.1",
     "qtawesome>=1.4.0",
     "fastapi>=0.115.0",
     "uvicorn[standard]>=0.31.0",

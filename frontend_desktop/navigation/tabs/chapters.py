@@ -45,8 +45,10 @@ class ChapterTab(BaseTab[ChapterState]):
             parent=self,
         )
 
-        self.main_layout.addWidget(self.editor_lbl)
-        self.main_layout.addWidget(self.editor, stretch=1)
+        self.content_layout.setContentsMargins(0, 0, 9, 0)
+        self.content_layout.addWidget(self.editor_lbl)
+        self.content_layout.addWidget(self.editor, stretch=1)
+        self.content_layout.addStretch()
 
     @override
     @Slot(list)
@@ -56,7 +58,7 @@ class ChapterTab(BaseTab[ChapterState]):
         drop_path = Path(file_paths[0]).resolve()
         if drop_path.suffix == ".txt":
             str_drop = str(drop_path)
-            self.input_entry.setText(str_drop)
+            self.input_entry.setPlainText(str_drop)
             self.input_entry.setToolTip(str_drop)
             with open(drop_path, encoding="utf-8") as f:
                 chapters = f.read()
