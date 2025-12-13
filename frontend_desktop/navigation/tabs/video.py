@@ -2,14 +2,16 @@ from pathlib import Path
 
 from pymediainfo import MediaInfo
 from PySide6.QtCore import Slot
-from PySide6.QtWidgets import QTreeWidgetItem
+from PySide6.QtWidgets import QMessageBox, QTreeWidgetItem
 from typing_extensions import override
 
 from core.job_states import VideoState
+from core.logger import LOG
 from core.utils.autoqpf import auto_gen_chapters
-from core.utils.language import get_full_language_str
+from core.utils.language import detect_language_from_filename, get_full_language_str
 from frontend_desktop.global_signals import GSigs
 from frontend_desktop.navigation.tabs.base import BaseTab
+from frontend_desktop.widgets.track_import_dialog import TrackImportDialog
 
 
 class VideoTab(BaseTab[VideoState]):
@@ -48,16 +50,79 @@ class VideoTab(BaseTab[VideoState]):
 
         # detect title if exists in the mediainfo
         v_track = media_info.video_tracks[0] if media_info.video_tracks else None
+
+        # if no video track found show error and return
+        if not v_track:
+            failure_msg = f"No video track found in file: {file_path}"
+            LOG.critical(failure_msg, LOG.SRC.FE)
+            QMessageBox.critical(
+                self,
+                "No Video Track Found",
+                failure_msg,
+            )
+            self._parse_file_done()
+            self.reset_tab()
+            return
+
+        # load title if exists
         if v_track and v_track.title:
             self.title_entry.setText(v_track.title)
 
-        # we will attempt to extract chapters if they exist, ignoring any errors silently
-        try:
-            chapters = auto_gen_chapters(media_info)
-            if chapters:
-                GSigs().chapters_updated.emit(chapters)
-        except Exception:
-            pass
+        # show track import dialog only for mp4/m4v files with audio/subtitle/chapter tracks
+        is_mp4 = file_path.suffix.lower() in (".mp4", ".m4v")
+        has_audio = bool(media_info.audio_tracks)
+        has_subs = bool(media_info.text_tracks)
+        has_chapters = bool(media_info.menu_tracks)
+
+        if is_mp4 and (has_audio or has_subs or has_chapters):
+            dialog = TrackImportDialog(file_path, media_info, parent=self)
+            if dialog.exec():
+                selected = dialog.get_selected_tracks()
+
+                # emit signals for selected tracks
+                if selected["audio"]:
+                    GSigs().video_audio_tracks_detected.emit(
+                        media_info, file_path, selected["audio"]
+                    )
+
+                if selected["subtitle"]:
+                    GSigs().video_subtitle_tracks_detected.emit(
+                        media_info, file_path, selected["subtitle"]
+                    )
+
+                # extract and emit chapters only if selected
+                if selected["chapters"]:
+                    try:
+                        chapters = auto_gen_chapters(media_info)
+                        if chapters:
+                            GSigs().chapters_updated.emit(chapters)
+                    except Exception:
+                        pass
+
+                # show status tip about imported tracks
+                LOG.info(
+                    f"Imported {selected['imported_track_count']} tracks from video file: {file_path}",
+                    LOG.SRC.FE,
+                )
+                LOG.debug(f"Imported tracks detail: {selected}", LOG.SRC.FE)
+
+            # if user cancels, we just don't import audio/subs/chapters
+        else:
+            # non-MP4 or no extra tracks - just try to extract chapters anyway
+            try:
+                chapters = auto_gen_chapters(media_info)
+                if chapters:
+                    GSigs().chapters_updated.emit(chapters)
+            except Exception:
+                LOG.debug(
+                    "Failed to auto-generate chapters from video file", LOG.SRC.FE
+                )
+
+        # emit signal to suggest output filepath generation
+        GSigs().video_generate_output_filepath.emit(
+            Path(str(file_path.with_suffix("")) + "_new.mp4")
+        )
+
         self._update_ui(media_info, file_path)
         self._parse_file_done()
 
@@ -73,7 +138,16 @@ class VideoTab(BaseTab[VideoState]):
                 if index != -1:
                     self.lang_combo.setCurrentIndex(index)
         else:
-            self.lang_combo.setCurrentIndex(0)
+            # fallback: try to detect language from filename
+            file_path = Path(self.input_entry.text().strip())
+            detected_lang = detect_language_from_filename(file_path.name)
+            if detected_lang:
+                full_lang = detected_lang.name
+                index = self.lang_combo.findText(full_lang)
+                if index != -1:
+                    self.lang_combo.setCurrentIndex(index)
+            else:
+                self.lang_combo.setCurrentIndex(0)
 
     @override
     def _load_title(self, media_info: MediaInfo) -> None:

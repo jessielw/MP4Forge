@@ -12,6 +12,7 @@ from PySide6.QtWidgets import (
     QHeaderView,
     QLabel,
     QLineEdit,
+    QMessageBox,
     QProgressBar,
     QPushButton,
     QTableWidget,
@@ -22,8 +23,10 @@ from PySide6.QtWidgets import (
 
 from core.muxer import VideoMuxer
 from core.queue_manager import JobStatus, MuxJob, QueueCallback, QueueManager
+from frontend_desktop.context import context
 from frontend_desktop.global_signals import GSigs
 from frontend_desktop.types.nav import Tabs
+from frontend_desktop.widgets.scrollable_error_dialog import ScrollableErrorDialog
 
 if TYPE_CHECKING:
     from frontend_desktop.main import MainWindow
@@ -37,7 +40,7 @@ class MuxWorker(QThread):
     """Worker thread to process queue jobs - only runs when queue is active"""
 
     job_finished = Signal(UUID)
-    error_occurred = Signal(str, str)
+    job_failed = Signal(UUID, str)
 
     def __init__(self, queue_manager: QueueManager, parent=None) -> None:
         super().__init__(parent)
@@ -47,22 +50,23 @@ class MuxWorker(QThread):
 
     def run(self) -> None:
         """Process jobs from queue sequentially"""
-        try:
-            while self.is_running:
-                queued_jobs = self.queue_manager.get_queued_jobs()
+        while self.is_running:
+            queued_jobs = self.queue_manager.get_queued_jobs()
 
-                # if no jobs, exit the worker (queue is complete)
-                if not queued_jobs:
-                    break
+            # if no jobs, exit the worker (queue is complete)
+            if not queued_jobs:
+                break
 
-                job = queued_jobs[0]
+            job = queued_jobs[0]
+            try:
                 self.muxer.mux_from_job(job)
                 self.job_finished.emit(job.job_id)
-        except Exception as e:
-            # catch any unhandled exceptions in the worker thread
-            error_msg = f"Worker thread error: {str(e)}"
-            print(error_msg)  # debug logging output?
-            self.error_occurred.emit(error_msg, traceback.format_exc())
+            except Exception as e:
+                # catch any exceptions during muxing and link to the job
+                error_msg = (
+                    f"Muxing failed: {str(e)}\n\nTraceback:\n{traceback.format_exc()}"
+                )
+                self.job_failed.emit(job.job_id, error_msg)
 
     def stop(self) -> None:
         """Signal thread to stop gracefully after current job finishes"""
@@ -109,6 +113,11 @@ class OutputTab(QWidget):
         # track confirmation timers by job_id
         self.cancel_timers: dict[UUID, QTimer] = {}
 
+        # listen for suggested output filepath generation
+        GSigs().video_generate_output_filepath.connect(
+            self._on_suggested_output_filepath
+        )
+
         # connect internal signals
         self._job_added_signal.connect(self._on_job_added_ui)
         self._job_status_changed_signal.connect(self._on_job_status_changed_ui)
@@ -139,13 +148,13 @@ class OutputTab(QWidget):
         output_layout.addWidget(self.output_browse_btn)
 
         # queue table (removed "Created" column as suggested)
-        self.queue_table = QTableWidget(0, 4, self)
+        self.queue_table = QTableWidget(0, 5, self)
         self.queue_table.setFrameShape(QFrame.Shape.Box)
         self.queue_table.setFrameShadow(QFrame.Shadow.Sunken)
         self.queue_table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
         self.queue_table.setSelectionMode(QTableWidget.SelectionMode.NoSelection)
         self.queue_table.setHorizontalHeaderLabels(
-            ("Status", "Output File", "Progress", "Actions")
+            ("Status", "Output File", "Progress", "Details", "Actions")
         )
         self.queue_table.horizontalHeader().setSectionResizeMode(
             1, QHeaderView.ResizeMode.Stretch
@@ -186,13 +195,30 @@ class OutputTab(QWidget):
         # initial refresh
         self._refresh_table()
 
+    @Slot(object)
+    def _on_suggested_output_filepath(self, suggested_path: Path) -> None:
+        """Handle suggested output filepath from other tabs"""
+        self.output_entry.setText(str(suggested_path))
+
     @Slot()
     def _browse_output_file(self) -> None:
         """Open file dialog to select output file"""
+        # we'll prioritize the context last used path > output entry text > ""
+        output_text = self.output_entry.text().strip()
+        output_path = Path(output_text) if output_text else None
+        browse_path = ""
+        if context.last_used_path and output_path:
+            browse_path = str(context.last_used_path / output_path.name)
+        elif context.last_used_path:
+            browse_path = str(context.last_used_path)
+        elif output_path:
+            browse_path = str(output_path)
+
+        # open save file dialog
         file_path, _ = QFileDialog.getSaveFileName(
             self,
             "Select Output File",
-            "",
+            browse_path,
             "MP4 Files (*.mp4);;All Files (*)",
         )
         if file_path:
@@ -201,6 +227,22 @@ class OutputTab(QWidget):
     @Slot()
     def _add_current_job(self) -> None:
         """Add current tab states to queue as a new job"""
+        # check if output path exists and ask to overwrite if needed
+        output_path = Path(self.output_entry.text().strip())
+        if output_path.exists():
+            if (
+                QMessageBox.question(
+                    self,
+                    "Output File Exists",
+                    f"{output_path}\n\npath already exists. Do you want to overwrite it?",
+                )
+                != QMessageBox.StandardButton.Yes
+            ):
+                GSigs().main_window_update_status_tip.emit(
+                    "Output file already exists - please choose a different path", 3000
+                )
+                return
+
         # collect tab widgets from main window
         video_tab: VideoTab = self.main_window.tabs[Tabs.Video]
         audio_tabs: MultiAudioTab = self.main_window.tabs[Tabs.Audio]
@@ -280,7 +322,7 @@ class OutputTab(QWidget):
             # create and start worker
             self.worker = MuxWorker(self.queue_manager, self)
             self.worker.job_finished.connect(self._on_job_finished)
-            self.worker.error_occurred.connect(self._on_worker_error)
+            self.worker.job_failed.connect(self._on_job_failed)
             # thread naturally finishes
             self.worker.finished.connect(self._on_worker_finished)
             self.worker.start()
@@ -336,10 +378,16 @@ class OutputTab(QWidget):
             self._stop_queue()
         self._refresh_table()
 
-    @Slot(str, str)
-    def _on_worker_error(self, error_msg: str, _traceback: str) -> None:
-        """Handle unhandled errors from worker thread"""
-        GSigs().main_window_update_status_tip.emit(f"Worker error: {error_msg}", 5000)
+    @Slot(UUID, str)
+    def _on_job_failed(self, job_id: UUID, error_msg: str) -> None:
+        """Handle job failure - store error message in job for display"""
+        job = self.queue_manager.get_job(job_id)
+        if job:
+            job.error_message = error_msg
+            self.queue_manager.update_job_status(job_id, JobStatus.FAILED)
+        GSigs().main_window_update_status_tip.emit(
+            f"Job failed: {error_msg[:75]}... (see details/logs)", 5000
+        )
         self._refresh_table()
 
     def _refresh_table(self) -> None:
@@ -389,6 +437,17 @@ class OutputTab(QWidget):
             progress_item.setFlags(progress_item.flags() & ~Qt.ItemFlag.ItemIsEditable)
             self.queue_table.setItem(row, 2, progress_item)
 
+            # details button - only for failed/cancelled jobs with error messages
+            if (
+                job.status in (JobStatus.FAILED, JobStatus.CANCELLED)
+                and job.error_message
+            ):
+                details_btn = QPushButton("View Details", self)
+                details_btn.clicked.connect(
+                    lambda checked, jid=job.job_id: self._show_error_details(jid)
+                )
+                self.queue_table.setCellWidget(row, 3, details_btn)
+
             # actions (cancel button) - for queued or processing jobs
             if job.status in (JobStatus.QUEUED, JobStatus.PROCESSING):
                 # determine button text based on whether confirmation is active
@@ -399,7 +458,8 @@ class OutputTab(QWidget):
                 cancel_btn.clicked.connect(
                     lambda checked, jid=job.job_id: self._handle_cancel_click(jid)
                 )
-                self.queue_table.setCellWidget(row, 3, cancel_btn)
+                self.queue_table.setCellWidget(row, 4, cancel_btn)
+
             # show remove button for completed/failed
             elif job.status in (
                 JobStatus.COMPLETED,
@@ -410,7 +470,7 @@ class OutputTab(QWidget):
                 remove_btn.clicked.connect(
                     lambda checked, jid=job.job_id: self._remove_job(jid)
                 )
-                self.queue_table.setCellWidget(row, 3, remove_btn)
+                self.queue_table.setCellWidget(row, 4, remove_btn)
 
         # update stats
         total = len(jobs)
@@ -472,6 +532,21 @@ class OutputTab(QWidget):
         """Remove a completed/failed job"""
         self.queue_manager.remove_job(job_id)
         self._refresh_table()
+
+    def _show_error_details(self, job_id: UUID) -> None:
+        """Show error details in a scrollable dialog"""
+        job = self.queue_manager.get_job(job_id)
+        if not job or not job.error_message:
+            return
+
+        title = f"Job Error Details - {job.output_file.name}"
+        dialog = ScrollableErrorDialog(
+            error_message=job.error_message,
+            title=title,
+            parent_percentage=85,
+            parent=self,
+        )
+        dialog.exec()
 
     def closeEvent(self, event) -> None:
         """Cleanup when tab is closed"""

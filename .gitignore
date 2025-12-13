@@ -25,6 +25,7 @@ Thumbs.db
 # misc
 .scraps/
 
-# runtime
-runtime/
+# runtime (ignore everything except images)
+runtime/*
 !runtime/images/
+!runtime/.gitkeep

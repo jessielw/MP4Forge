@@ -12,7 +12,8 @@ from PySide6.QtWidgets import (
 from typing_extensions import override
 
 from core.job_states import AudioState
-from core.utils.language import get_full_language_str
+from core.utils.language import detect_language_from_filename, get_full_language_str
+from frontend_desktop.global_signals import GSigs
 from frontend_desktop.navigation.tabs.base import BaseTab
 from frontend_desktop.widgets.multi_tabbed_widget import MultiTabbedTabWidget
 from frontend_desktop.widgets.track_selector_dialog import TrackSelectorDialog
@@ -64,7 +65,16 @@ class AudioTab(BaseTab[AudioState]):
                 if index != -1:
                     self.lang_combo.setCurrentIndex(index)
         else:
-            self.lang_combo.setCurrentIndex(0)
+            # fallback: try to detect language from filename
+            file_path = Path(self.input_entry.text().strip())
+            detected_lang = detect_language_from_filename(file_path.name)
+            if detected_lang:
+                full_lang = detected_lang.name
+                index = self.lang_combo.findText(full_lang)
+                if index != -1:
+                    self.lang_combo.setCurrentIndex(index)
+            else:
+                self.lang_combo.setCurrentIndex(0)
 
     @override
     def _load_title(self, media_info: MediaInfo) -> None:
@@ -77,6 +87,19 @@ class AudioTab(BaseTab[AudioState]):
                     title = track.title or ""
                     break
         self.title_entry.setText(title)
+
+    def _load_default_flag(self, media_info: MediaInfo) -> None:
+        """Load default flag from media info."""
+        is_default = False
+        if self.selected_track_id is not None:
+            for track in media_info.audio_tracks:
+                if track.track_id == self.selected_track_id:
+                    # check if track is marked as default
+                    default_val = getattr(track, "default", None)
+                    if default_val and str(default_val).lower() in ("yes", "true", "1"):
+                        is_default = True
+                    break
+        self.default_checkbox.setChecked(is_default)
 
     @override
     def _load_media_info_into_tree(self, media_info: MediaInfo) -> None:
@@ -98,8 +121,12 @@ class AudioTab(BaseTab[AudioState]):
         file_path = Path(self.input_entry.text().strip())
         is_mp4 = file_path.suffix.lower() in (".mp4", ".m4a")
 
-        if is_mp4 and len(media_info.audio_tracks) > 1:
-            # show track selector dialog
+        if (
+            is_mp4
+            and len(media_info.audio_tracks) > 1
+            and self.selected_track_id is None
+        ):
+            # show track selector dialog only if track not already selected
             dialog = TrackSelectorDialog(file_path, parent=self)
             if dialog.exec():
                 # returns MediaInfo track_id (used for MP4Box #N)
@@ -115,6 +142,17 @@ class AudioTab(BaseTab[AudioState]):
                 # user cancelled
                 self.reset_tab()
                 return
+        elif (
+            is_mp4
+            and len(media_info.audio_tracks) > 1
+            and self.selected_track_id is not None
+        ):
+            # track already selected (from video auto-population), find it
+            track = media_info.audio_tracks[0]  # default
+            for audio_track in media_info.audio_tracks:
+                if audio_track.track_id == self.selected_track_id:
+                    track = audio_track
+                    break
         else:
             # single track or non-MP4 - use first track
             track = media_info.audio_tracks[0]
@@ -210,6 +248,9 @@ class MultiAudioTab(QWidget):
         layout.setContentsMargins(0, 0, 0, 0)
         layout.addWidget(self.multi_track)
 
+        # connect to video audio tracks signal
+        GSigs().video_audio_tracks_detected.connect(self._handle_video_audio_tracks)
+
     def export_all_audio_states(self) -> list[AudioState]:
         """Export states from all audio track tabs (only tabs with input files)."""
         states = []
@@ -226,3 +267,34 @@ class MultiAudioTab(QWidget):
         for widget in self.multi_track.get_all_tab_widgets():
             if hasattr(widget, "reset_tab"):
                 widget.reset_tab()  # type: ignore
+
+    def _handle_video_audio_tracks(
+        self, media_info: MediaInfo, file_path: Path, selected_track_ids: list[int]
+    ) -> None:
+        """Handle audio tracks detected in video file."""
+        # filter to only selected tracks
+        selected_tracks = [
+            track
+            for track in media_info.audio_tracks
+            if track.track_id in selected_track_ids
+        ]
+
+        if not selected_tracks:
+            return
+
+        # reset to single tab first
+        self.multi_track.reset_to_single_tab()
+
+        # create tabs for each selected audio track
+        for idx, track in enumerate(selected_tracks):
+            if idx > 0:  # first tab already exists
+                self.multi_track.add_new_tab()
+
+            # get the tab widget (we know it's an AudioTab)
+            tab_widget: AudioTab = self.multi_track.get_all_tab_widgets()[idx]  # type: ignore
+
+            # simulate file drop to populate the tab
+            tab_widget._handle_dropped_file([str(file_path)])
+
+            # set the selected track ID for this specific track
+            tab_widget.selected_track_id = track.track_id

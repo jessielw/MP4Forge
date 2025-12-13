@@ -5,6 +5,47 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.0-rc2] - 2025-12-07
+
+### Added
+
+- Pop up for failure to load MediaInfo
+- Multiple track import when opening a video on the **Video** tab:
+  - New window to select which track(s) a user would like to import
+    - This supports audio(s), subtitle(s) and chapters
+- Error handling when a file is opened for video file without a video track
+- Now detects language _(based off of MediaInfo)_ and applies it from input
+- Now detects title and applies it from input
+- Now detects default/forced flags where applicable and applies them from mediainfo if being imported from the video tab
+- Default flags to audio/subtitles
+  - Automatically unchecks other default flags if checked in another tab in the same category _(category: audio/subtitles)_
+- Forced flags to subtitles
+- Audio/subtitles are now importable from mp4/m4v files
+- Button to see where log files are stored in the settings panel
+- Now automatically cleans up log files over 50 log files ~1 seconds after UI initializes
+- Added a **Details** column in the **Output** tab that will allow the user to click on it in the event of a failure and see the output from mp4box when a job fails
+- Remembers last opened path in the context to open new file browsers at that same path
+- Generates a default output name based on the input from the video tab _(file input_new.mp4)_
+- Asks to overwrite if file already exists on adding new job to queue
+- Now attempts to detects language from filename as a fallback if mediainfo doesn't have it
+- Detects forced/foreign in subtitle filename and auto checks the track in the UI if input is not mp4/m4v
+
+### Changed
+
+- Subtitle tab now accepts **.mp4/.m4v**
+- Improved logging (still some work to be done)
+- All tabs contents are now wrapped in a scrolled area box - allowing the program to stay compact but also have larger default widget sizes if needed
+- Changed to a slightly better icon for the program (still could use improvement)
+- Error window pop can now be maximized
+
+### Fixed
+
+- Settings mp4box path was set to the wrong icon
+
+### Removed
+
+-
+
 ## [2.0.0-rc1] - 2025-12-07
 
 ### Added
