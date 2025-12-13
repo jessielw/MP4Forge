@@ -38,8 +38,6 @@ class NavigationTabs(QWidget):
             # separate Settings visually
             widget_class = get_tab_widget_class(tab)
             if widget_class is SettingsTab:
-                self.main_layout.addStretch()
-                self.main_layout.addSpacing(8)
                 self.main_layout.addWidget(build_h_line((1, 1, 1, 1)))
 
             self.main_layout.addWidget(btn)

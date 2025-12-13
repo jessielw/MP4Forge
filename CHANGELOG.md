@@ -13,7 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
--
+- Adjusted the spacing in the nav panel
 
 ## [2.0.0-rc2] - 2025-12-12
 
