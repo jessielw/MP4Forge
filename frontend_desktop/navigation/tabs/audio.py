@@ -12,7 +12,7 @@ from PySide6.QtWidgets import (
 from typing_extensions import override
 
 from core.job_states import AudioState
-from core.utils.language import get_full_language_str
+from core.utils.language import detect_language_from_filename, get_full_language_str
 from frontend_desktop.global_signals import GSigs
 from frontend_desktop.navigation.tabs.base import BaseTab
 from frontend_desktop.widgets.multi_tabbed_widget import MultiTabbedTabWidget
@@ -65,7 +65,16 @@ class AudioTab(BaseTab[AudioState]):
                 if index != -1:
                     self.lang_combo.setCurrentIndex(index)
         else:
-            self.lang_combo.setCurrentIndex(0)
+            # fallback: try to detect language from filename
+            file_path = Path(self.input_entry.text().strip())
+            detected_lang = detect_language_from_filename(file_path.name)
+            if detected_lang:
+                full_lang = detected_lang.name
+                index = self.lang_combo.findText(full_lang)
+                if index != -1:
+                    self.lang_combo.setCurrentIndex(index)
+            else:
+                self.lang_combo.setCurrentIndex(0)
 
     @override
     def _load_title(self, media_info: MediaInfo) -> None:

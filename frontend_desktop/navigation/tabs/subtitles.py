@@ -10,7 +10,7 @@ from PySide6.QtWidgets import (
 from typing_extensions import override
 
 from core.job_states import SubtitleState
-from core.utils.language import get_full_language_str
+from core.utils.language import detect_language_from_filename, get_full_language_str
 from frontend_desktop.global_signals import GSigs
 from frontend_desktop.navigation.tabs.base import BaseTab
 from frontend_desktop.widgets.multi_tabbed_widget import MultiTabbedTabWidget
@@ -46,7 +46,16 @@ class SubtitleTab(BaseTab[SubtitleState]):
                 if index != -1:
                     self.lang_combo.setCurrentIndex(index)
         else:
-            self.lang_combo.setCurrentIndex(0)
+            # fallback: try to detect language from filename
+            file_path = Path(self.input_entry.text().strip())
+            detected_lang = detect_language_from_filename(file_path.name)
+            if detected_lang:
+                full_lang = detected_lang.name
+                index = self.lang_combo.findText(full_lang)
+                if index != -1:
+                    self.lang_combo.setCurrentIndex(index)
+            else:
+                self.lang_combo.setCurrentIndex(0)
 
     @override
     def _load_title(self, media_info: MediaInfo) -> None:
@@ -154,7 +163,15 @@ class SubtitleTab(BaseTab[SubtitleState]):
                     if forced_val and str(forced_val).lower() in ("yes", "true", "1"):
                         is_forced = True
                     break
-        self.forced_checkbox.setChecked(is_forced)
+
+        # for non-MP4 files (like SRT), check filename for forced/foreign indicators
+        if not is_forced:
+            file_path = Path(self.input_entry.text().strip())
+            if file_path.suffix.lower() not in (".mp4", ".m4v"):
+                filename_lower = file_path.name.lower()
+                if "forced" in filename_lower or "foreign" in filename_lower:
+                    is_forced = True
+                self.forced_checkbox.setChecked(is_forced)
 
     @override
     def export_state(self) -> SubtitleState | None:

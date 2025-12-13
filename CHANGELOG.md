@@ -27,6 +27,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Remembers last opened path in the context to open new file browsers at that same path
 - Generates a default output name based on the input from the video tab _(file input_new.mp4)_
 - Asks to overwrite if file already exists on adding new job to queue
+- Now attempts to detects language from filename as a fallback if mediainfo doesn't have it
+- Detects forced/foreign in subtitle filename and auto checks the track in the UI if input is not mp4/m4v
 
 ### Changed
 
