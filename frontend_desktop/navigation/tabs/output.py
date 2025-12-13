@@ -3,7 +3,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 from uuid import UUID
 
-from PySide6.QtCore import Qt, QThread, QTimer, Signal, Slot
+from PySide6.QtCore import QSize, Qt, QThread, QTimer, Signal, Slot
 from PySide6.QtGui import QColor
 from PySide6.QtWidgets import (
     QFileDialog,
@@ -11,10 +11,11 @@ from PySide6.QtWidgets import (
     QHBoxLayout,
     QHeaderView,
     QLabel,
-    QLineEdit,
     QMessageBox,
+    QPlainTextEdit,
     QProgressBar,
     QPushButton,
+    QSizePolicy,
     QTableWidget,
     QTableWidgetItem,
     QVBoxLayout,
@@ -26,7 +27,10 @@ from core.queue_manager import JobStatus, MuxJob, QueueCallback, QueueManager
 from frontend_desktop.context import context
 from frontend_desktop.global_signals import GSigs
 from frontend_desktop.types.nav import Tabs
+from frontend_desktop.widgets.dnd_factory import DNDPushButton
+from frontend_desktop.widgets.qtawesome_theme_swapper import QTAThemeSwap
 from frontend_desktop.widgets.scrollable_error_dialog import ScrollableErrorDialog
+from frontend_desktop.widgets.utils import build_h_line
 
 if TYPE_CHECKING:
     from frontend_desktop.main import MainWindow
@@ -135,17 +139,28 @@ class OutputTab(QWidget):
         )
 
         # output path selection
-        self.output_label = QLabel("Output File:", self)
-        self.output_entry = QLineEdit(self, placeholderText="Select output file...")
-        self.output_entry.setReadOnly(True)
+        self.output_entry = QPlainTextEdit(
+            self, readOnly=True, placeholderText="Select output file..."
+        )
+        # prevent expanding vertically too much
+        self.output_entry.setSizePolicy(
+            QSizePolicy.Policy.MinimumExpanding, QSizePolicy.Policy.Maximum
+        )
 
-        self.output_browse_btn = QPushButton("Browse", self)
+        # output path button
+        self.output_browse_btn = DNDPushButton(self)
+        self.output_browse_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.output_browse_btn.setToolTip("Browse for output file")
+        QTAThemeSwap().register(
+            self.output_browse_btn, "ph.file-arrow-up", icon_size=QSize(24, 24)
+        )
         self.output_browse_btn.clicked.connect(self._browse_output_file)
 
         output_layout = QHBoxLayout()
-        output_layout.addWidget(self.output_label)
-        output_layout.addWidget(self.output_entry, stretch=1)
-        output_layout.addWidget(self.output_browse_btn)
+        output_layout.addWidget(self.output_entry)
+        output_layout.addWidget(
+            self.output_browse_btn, alignment=Qt.AlignmentFlag.AlignTop
+        )
 
         # queue table (removed "Created" column as suggested)
         self.queue_table = QTableWidget(0, 5, self)
@@ -188,10 +203,12 @@ class OutputTab(QWidget):
         # main_layout
         self.main_layout = QVBoxLayout(self)
         self.main_layout.setContentsMargins(0, 0, 0, 0)
-        self.main_layout.addLayout(output_layout)
+        self.main_layout.addLayout(output_layout, stretch=1)
+        self.main_layout.addWidget(build_h_line((1, 1, 1, 1)))
         self.main_layout.addLayout(btn_layout)
-        self.main_layout.addWidget(self.queue_table, stretch=1)
+        self.main_layout.addWidget(self.queue_table, stretch=10)
         self.main_layout.addLayout(stats_layout)
+        self.main_layout.addStretch()
 
         # initial refresh
         self._refresh_table()
@@ -199,13 +216,13 @@ class OutputTab(QWidget):
     @Slot(object)
     def _on_suggested_output_filepath(self, suggested_path: Path) -> None:
         """Handle suggested output filepath from other tabs"""
-        self.output_entry.setText(str(suggested_path))
+        self.output_entry.setPlainText(str(suggested_path))
 
     @Slot()
     def _browse_output_file(self) -> None:
         """Open file dialog to select output file"""
         # we'll prioritize the context last used path > output entry text > ""
-        output_text = self.output_entry.text().strip()
+        output_text = self.output_entry.toPlainText().strip()
         output_path = Path(output_text) if output_text else None
         browse_path = ""
         if context.last_used_path and output_path:
@@ -223,13 +240,13 @@ class OutputTab(QWidget):
             "MP4 Files (*.mp4);;All Files (*)",
         )
         if file_path:
-            self.output_entry.setText(file_path)
+            self.output_entry.setPlainText(file_path)
 
     @Slot()
     def _add_current_job(self) -> None:
         """Add current tab states to queue as a new job"""
         # check if output path exists and ask to overwrite if needed
-        output_path = Path(self.output_entry.text().strip())
+        output_path = Path(self.output_entry.toPlainText().strip())
         if output_path.exists():
             if (
                 QMessageBox.question(
@@ -251,7 +268,7 @@ class OutputTab(QWidget):
         chapter_tab: ChapterTab = self.main_window.tabs[Tabs.Chapters]
 
         # validate output path
-        output_path = self.output_entry.text().strip()
+        output_path = self.output_entry.toPlainText().strip()
         if not output_path:
             GSigs().main_window_update_status_tip.emit(
                 "Please select an output file", 3000
