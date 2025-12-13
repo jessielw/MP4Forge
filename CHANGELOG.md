@@ -21,7 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Chapter tab layout now pushes widgets to the top
-- Layout issues with subtitles/video tab
+- Layout issues with subtitles, video tab, chapters, and output tabs
 
 ## [2.0.0-rc2] - 2025-12-12
 

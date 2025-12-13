@@ -187,6 +187,7 @@ class OutputTab(QWidget):
 
         # main_layout
         self.main_layout = QVBoxLayout(self)
+        self.main_layout.setContentsMargins(0, 0, 0, 0)
         self.main_layout.addLayout(output_layout)
         self.main_layout.addLayout(btn_layout)
         self.main_layout.addWidget(self.queue_table, stretch=1)
