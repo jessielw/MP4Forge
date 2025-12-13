@@ -139,7 +139,7 @@ class VideoTab(BaseTab[VideoState]):
                     self.lang_combo.setCurrentIndex(index)
         else:
             # fallback: try to detect language from filename
-            file_path = Path(self.input_entry.text().strip())
+            file_path = Path(self.input_entry.toPlainText().strip())
             detected_lang = detect_language_from_filename(file_path.name)
             if detected_lang:
                 full_lang = detected_lang.name
@@ -198,7 +198,7 @@ class VideoTab(BaseTab[VideoState]):
         """Exports the current state of the tab as a VideoState."""
         return (
             VideoState(
-                input_file=Path(self.input_entry.text().strip()),
+                input_file=Path(self.input_entry.toPlainText().strip()),
                 language=self.lang_combo.currentData(),
                 title=self.title_entry.text().strip(),
                 delay_ms=self.delay_spinbox.value(),
@@ -210,4 +210,4 @@ class VideoTab(BaseTab[VideoState]):
     @override
     def is_tab_ready(self) -> bool:
         """Returns whether the tab is ready for muxing."""
-        return bool(self.input_entry.text().strip())
+        return bool(self.input_entry.toPlainText().strip())
