@@ -40,7 +40,7 @@ class VideoTab(BaseTab[VideoState]):
         self.default_checkbox.hide()
         self.forced_checkbox.hide()
 
-        self.content_layout.setContentsMargins(0, 0, 0, 0)
+        self.content_layout.setContentsMargins(0, 0, 9, 0)
         self.content_layout.addStretch()
 
     @override

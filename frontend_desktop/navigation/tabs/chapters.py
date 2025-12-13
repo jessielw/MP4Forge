@@ -45,7 +45,7 @@ class ChapterTab(BaseTab[ChapterState]):
             parent=self,
         )
 
-        self.content_layout.setContentsMargins(0, 0, 0, 0)
+        self.content_layout.setContentsMargins(0, 0, 9, 0)
         self.content_layout.addWidget(self.editor_lbl)
         self.content_layout.addWidget(self.editor, stretch=1)
         self.content_layout.addStretch()
