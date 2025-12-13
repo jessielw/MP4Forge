@@ -24,6 +24,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Button to see where log files are stored in the settings panel
 - Now automatically cleans up log files over 50 log files ~1 seconds after UI initializes
 - Added a **Details** column in the **Output** tab that will allow the user to click on it in the event of a failure and see the output from mp4box when a job fails
+- Remembers last opened path in the context to open new file browsers at that same path
+- Generates a default output name based on the input from the video tab _(file input_new.mp4)_
 
 ### Changed
 

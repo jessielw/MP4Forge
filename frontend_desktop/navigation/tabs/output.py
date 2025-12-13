@@ -22,6 +22,7 @@ from PySide6.QtWidgets import (
 
 from core.muxer import VideoMuxer
 from core.queue_manager import JobStatus, MuxJob, QueueCallback, QueueManager
+from frontend_desktop.context import context
 from frontend_desktop.global_signals import GSigs
 from frontend_desktop.types.nav import Tabs
 from frontend_desktop.widgets.scrollable_error_dialog import ScrollableErrorDialog
@@ -111,6 +112,11 @@ class OutputTab(QWidget):
         # track confirmation timers by job_id
         self.cancel_timers: dict[UUID, QTimer] = {}
 
+        # listen for suggested output filepath generation
+        GSigs().video_generate_output_filepath.connect(
+            self._on_suggested_output_filepath
+        )
+
         # connect internal signals
         self._job_added_signal.connect(self._on_job_added_ui)
         self._job_status_changed_signal.connect(self._on_job_status_changed_ui)
@@ -188,13 +194,25 @@ class OutputTab(QWidget):
         # initial refresh
         self._refresh_table()
 
+    @Slot(object)
+    def _on_suggested_output_filepath(self, suggested_path: Path) -> None:
+        """Handle suggested output filepath from other tabs"""
+        self.output_entry.setText(str(suggested_path))
+
     @Slot()
     def _browse_output_file(self) -> None:
         """Open file dialog to select output file"""
+        # we'll prioritize the context last used path > output entry text > ""
+        browse_path = (
+            (str(context.last_used_path) if context.last_used_path else "")
+            or self.output_entry.text().strip()
+            or ""
+        )
+        # open save file dialog
         file_path, _ = QFileDialog.getSaveFileName(
             self,
             "Select Output File",
-            "",
+            browse_path,
             "MP4 Files (*.mp4);;All Files (*)",
         )
         if file_path:

@@ -27,6 +27,9 @@ class GlobalSignals(QObject):
         object, object, list
     )  # MediaInfo, Path, selected_track_ids
 
+    # video generate output filepath
+    video_generate_output_filepath = Signal(object)  # suggested Path
+
     # scaling # TODO: add this feature in
     # scale_factor_changed_by_user = Signal(float)  # user hotkey changes (auto-save)
     # scale_factor_changed = Signal(float)  # all changes (UI sync)

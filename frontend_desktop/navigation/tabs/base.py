@@ -23,6 +23,7 @@ from PySide6.QtWidgets import (
 
 from core.logger import LOG
 from core.utils.mediainfo import get_media_info
+from frontend_desktop.context import context
 from frontend_desktop.global_signals import GSigs
 from frontend_desktop.utils.general_worker import GeneralWorker
 from frontend_desktop.widgets.dnd_factory import DNDLineEdit, DNDPushButton
@@ -180,6 +181,7 @@ class BaseTab(QWidget, Generic[TState]):
         """Handles a dropped file."""
         self._stop_reset_timer()
         drop_path = Path(file_paths[0]).resolve()
+        context.last_used_path = drop_path.parent
         str_drop = str(drop_path)
         self.input_entry.setText(str_drop)
         self.input_entry.setToolTip(str_drop)
@@ -262,7 +264,7 @@ class BaseTab(QWidget, Generic[TState]):
         file_path, _ = QFileDialog.getOpenFileName(
             self,
             "Select Media File",
-            "",
+            str(context.last_used_path) if context.last_used_path else "",
             self._file_dialog_filter,
         )
         if file_path:

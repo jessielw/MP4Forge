@@ -118,6 +118,11 @@ class VideoTab(BaseTab[VideoState]):
                     "Failed to auto-generate chapters from video file", LOG.SRC.FE
                 )
 
+        # emit signal to suggest output filepath generation
+        GSigs().video_generate_output_filepath.emit(
+            Path(str(file_path.with_suffix("")) + "_new.mp4")
+        )
+
         self._update_ui(media_info, file_path)
         self._parse_file_done()
 
