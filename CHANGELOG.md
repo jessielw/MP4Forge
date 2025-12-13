@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Adjusted input/delete buttons to stack on the right of the input widget
 - Disabled scroll wheel for language combo box
 - Improved the Output tab layout/visuals
+- Update to PySide6 v6.10.1
 
 ### Fixed
 
