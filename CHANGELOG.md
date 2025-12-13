@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Forced flags to subtitles
 - Audio/subtitles are now importable from mp4/m4v files
 - Button to see where log files are stored in the settings panel
+- Now automatically cleans up log files over 50 log files ~1 seconds after UI initializes
 
 ### Changed
 

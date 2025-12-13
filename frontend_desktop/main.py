@@ -2,7 +2,7 @@ import sys
 import traceback
 from pathlib import Path
 
-from PySide6.QtCore import Qt, QtMsgType, Slot, qInstallMessageHandler
+from PySide6.QtCore import Qt, QTimer, QtMsgType, Slot, qInstallMessageHandler
 from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import (
     QApplication,
@@ -21,6 +21,7 @@ from frontend_desktop.navigation.nav import NavigationTabs
 from frontend_desktop.navigation.tabs.base import BaseTab
 from frontend_desktop.tab_registry import get_tab_widget_class
 from frontend_desktop.types.nav import Tabs
+from frontend_desktop.utils.general_worker import GeneralWorker
 from frontend_desktop.widgets.resizable_stacked_widget import ResizableStackedWidget
 from frontend_desktop.widgets.scrollable_error_dialog import ScrollableErrorDialog
 from frontend_desktop.widgets.utils import build_v_line
@@ -82,6 +83,9 @@ class MainWindow(QMainWindow):
         # apply config settings after UI is fully initialized
         self._apply_config_on_startup()
 
+        # delayed tasks
+        QTimer.singleShot(1000, self._exec_delayed_starting_tasks)
+
     def _apply_config_on_startup(self) -> None:
         """Apply saved configuration settings on application startup"""
         # apply theme
@@ -99,6 +103,18 @@ class MainWindow(QMainWindow):
         LOG.info(
             f"Applied config - Theme: {theme}, Log Level: {self.conf.log_level.name}"
         )
+
+    def _exec_delayed_starting_tasks(self) -> None:
+        """
+        Execute tasks that should be run after the main window is shown.
+
+        Note: Fire off each task in a separate thread to avoid blocking the UI.
+        """
+        QTimer.singleShot(1, self._clean_up_logs)
+
+    def _clean_up_logs(self) -> None:
+        """Clean up old log files in a separate thread."""
+        GeneralWorker(func=LOG.clean_up_logs, parent=self, max_logs=50).start()
 
     def _setup_exception_hooks(self) -> None:
         sys.excepthook = self.exception_handler
