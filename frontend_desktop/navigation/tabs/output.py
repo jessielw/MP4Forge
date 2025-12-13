@@ -204,11 +204,16 @@ class OutputTab(QWidget):
     def _browse_output_file(self) -> None:
         """Open file dialog to select output file"""
         # we'll prioritize the context last used path > output entry text > ""
-        browse_path = (
-            (str(context.last_used_path) if context.last_used_path else "")
-            or self.output_entry.text().strip()
-            or ""
-        )
+        output_text = self.output_entry.text().strip()
+        output_path = Path(output_text) if output_text else None
+        browse_path = ""
+        if context.last_used_path and output_path:
+            browse_path = str(context.last_used_path / output_path.name)
+        elif context.last_used_path:
+            browse_path = str(context.last_used_path)
+        elif output_path:
+            browse_path = str(output_path)
+
         # open save file dialog
         file_path, _ = QFileDialog.getSaveFileName(
             self,
