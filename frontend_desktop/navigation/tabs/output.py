@@ -12,6 +12,7 @@ from PySide6.QtWidgets import (
     QHeaderView,
     QLabel,
     QLineEdit,
+    QMessageBox,
     QProgressBar,
     QPushButton,
     QTableWidget,
@@ -221,6 +222,22 @@ class OutputTab(QWidget):
     @Slot()
     def _add_current_job(self) -> None:
         """Add current tab states to queue as a new job"""
+        # check if output path exists and ask to overwrite if needed
+        output_path = Path(self.output_entry.text().strip())
+        if output_path.exists():
+            if (
+                QMessageBox.question(
+                    self,
+                    "Output File Exists",
+                    f"{output_path}\n\npath already exists. Do you want to overwrite it?",
+                )
+                != QMessageBox.StandardButton.Yes
+            ):
+                GSigs().main_window_update_status_tip.emit(
+                    "Output file already exists - please choose a different path", 3000
+                )
+                return
+
         # collect tab widgets from main window
         video_tab: VideoTab = self.main_window.tabs[Tabs.Video]
         audio_tabs: MultiAudioTab = self.main_window.tabs[Tabs.Audio]
