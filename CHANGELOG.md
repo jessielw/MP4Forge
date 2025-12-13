@@ -23,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Audio/subtitles are now importable from mp4/m4v files
 - Button to see where log files are stored in the settings panel
 - Now automatically cleans up log files over 50 log files ~1 seconds after UI initializes
+- Added a **Details** column in the **Output** tab that will allow the user to click on it in the event of a failure and see the output from mp4box when a job fails
 
 ### Changed
 
