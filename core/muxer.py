@@ -194,7 +194,7 @@ class VideoMuxer:
                     track_selector = f"#{subtitle.track_id}"
                 else:
                     track_selector = "#text"  # default to first text track
-                
+
                 subtitle_opts = track_selector
                 if subtitle.language:
                     subtitle_opts += f":lang={subtitle.language.part3}"
