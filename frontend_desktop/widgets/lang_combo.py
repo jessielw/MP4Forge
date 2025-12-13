@@ -10,7 +10,11 @@ _languages_cache = []
 def get_language_combo_box(parent: QWidget | None = None) -> CustomComboBox:
     """Creates and returns a language selection combo box."""
     lang_combo = CustomComboBox(
-        completer=True, completer_strict=True, max_items=15, parent=parent
+        completer=True,
+        completer_strict=True,
+        max_items=15,
+        disable_mouse_wheel=True,
+        parent=parent,
     )
 
     if not _languages_cache:
