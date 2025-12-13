@@ -1,8 +1,15 @@
 import sys
 import traceback
 
-from PySide6.QtCore import Qt, QTimer, QtMsgType, Slot, qInstallMessageHandler
-from PySide6.QtGui import QIcon
+from PySide6.QtCore import (
+    QEvent,
+    Qt,
+    QTimer,
+    QtMsgType,
+    Slot,
+    qInstallMessageHandler,
+)
+from PySide6.QtGui import QIcon, QWheelEvent
 from PySide6.QtWidgets import (
     QApplication,
     QHBoxLayout,
@@ -68,6 +75,8 @@ class MainWindow(QMainWindow):
 
         # wire nav -> pages
         self.nav.tabRequested.connect(self.stacked_widget.setCurrentIndex)
+        # enable scroll-to-navigate on nav widget
+        self.nav.installEventFilter(self)
 
         # layout
         central = QHBoxLayout()
@@ -172,6 +181,29 @@ class MainWindow(QMainWindow):
         else:
             self.status_progress_bar.hide()
             self.status_progress_bar.setRange(0, 100)
+
+    def eventFilter(self, obj, event):
+        """Intercept wheel events on navigation widget to scroll through tabs (excluding Settings)."""
+        if obj == self.nav and event.type() == QEvent.Type.Wheel:
+            wheel_event: QWheelEvent = event
+            current_idx = self.stacked_widget.currentIndex()
+            settings_idx = len(Tabs) - 1  # settings is always last
+
+            # scroll down = next tab (skip settings)
+            if wheel_event.angleDelta().y() < 0:
+                if current_idx < settings_idx - 1:
+                    self.stacked_widget.setCurrentIndex(current_idx + 1)
+                    self.nav.tab_button_group.button(current_idx + 1).setChecked(True)
+                    return True
+
+            # scroll up = previous tab
+            elif wheel_event.angleDelta().y() > 0:
+                if current_idx > 0:
+                    self.stacked_widget.setCurrentIndex(current_idx - 1)
+                    self.nav.tab_button_group.button(current_idx - 1).setChecked(True)
+                    return True
+
+        return super().eventFilter(obj, event)
 
 
 if __name__ == "__main__":
