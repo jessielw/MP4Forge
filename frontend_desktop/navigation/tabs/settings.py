@@ -16,8 +16,9 @@ from PySide6.QtWidgets import (
 )
 
 from core.config import Conf
-from core.logger import LogLevel
+from core.logger import LOG, LogLevel
 from frontend_desktop.global_signals import GSigs
+from frontend_desktop.utils.file_utils import open_explorer
 from frontend_desktop.widgets.combo_box import CustomComboBox
 from frontend_desktop.widgets.qtawesome_theme_swapper import QTAThemeSwap
 
@@ -53,6 +54,17 @@ class SettingsTab(QWidget):
             self.log_level_combo.addItem(str(level), level)
         self.log_level_combo.setCurrentText(str(Conf.log_level))
 
+        # log level see directory button
+        self.log_level_open_dir_btn = QToolButton(content_widget)
+        self.log_level_open_dir_btn.setToolTip("Open Log Directory")
+        QTAThemeSwap().register(self.log_level_open_dir_btn, "ph.eye", QSize(20, 20))
+        self.log_level_open_dir_btn.clicked.connect(self._open_log_directory)
+
+        # log level combo + open dir layout
+        log_level_layout = QHBoxLayout()
+        log_level_layout.addWidget(self.log_level_combo, stretch=1)
+        log_level_layout.addWidget(self.log_level_open_dir_btn)
+
         # mp4box path
         mp4box_lbl = QLabel("Mp4Box Path", content_widget)
         self.mp4box_line_edit = QLineEdit(content_widget, readOnly=True)
@@ -73,7 +85,7 @@ class SettingsTab(QWidget):
         content_layout.addWidget(theme_lbl)
         content_layout.addWidget(self.theme_combo)
         content_layout.addWidget(log_level_lbl)
-        content_layout.addWidget(self.log_level_combo)
+        content_layout.addLayout(log_level_layout)
         content_layout.addWidget(mp4box_lbl)
         content_layout.addLayout(path_layout)
         content_layout.addStretch()
@@ -109,6 +121,14 @@ class SettingsTab(QWidget):
             )
         else:
             app.styleHints().unsetColorScheme()  # pyright: ignore [reportAttributeAccessIssue, reportOptionalMemberAccess]
+
+    @Slot()
+    def _open_log_directory(self) -> None:
+        """Open the log directory in the system file explorer"""
+        log_dir = LOG.log_file.parent
+        if not log_dir.exists():
+            log_dir.mkdir(parents=True, exist_ok=True)
+        open_explorer(log_dir)
 
     @Slot()
     def _browse_mp4box(self) -> None:

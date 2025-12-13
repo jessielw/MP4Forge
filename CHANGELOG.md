@@ -16,11 +16,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Error handling when a file is opened for video file without a video track
 - Now detects language _(based off of MediaInfo)_ and applies it from input
 - Now detects title and applies it from input
-- Now detects default/forced flags where applicable and applies them from input
+- Now detects default/forced flags where applicable and applies them from mediainfo if being imported from the video tab
 - Default flags to audio/subtitles
   - Automatically unchecks other default flags if checked in another tab in the same category _(category: audio/subtitles)_
 - Forced flags to subtitles
 - Audio/subtitles are now importable from mp4/m4v files
+- Button to see where log files are stored in the settings panel
 
 ### Changed
 
