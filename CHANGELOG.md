@@ -29,6 +29,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Subtitle tab now accepts **.mp4/.m4v**
 - Improved logging (still some work to be done)
 - All tabs contents are now wrapped in a scrolled area box - allowing the program to stay compact but also have larger default widget sizes if needed
+- Changed to a slightly better icon for the program (still could use improvement)
 
 ### Fixed
 
