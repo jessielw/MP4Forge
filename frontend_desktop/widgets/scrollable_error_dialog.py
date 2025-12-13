@@ -1,5 +1,6 @@
 import sys
 
+from PySide6.QtGui import Qt
 from PySide6.QtWidgets import (
     QApplication,
     QDialog,
@@ -24,7 +25,7 @@ class ScrollableErrorDialog(QDialog):
     ) -> None:
         super().__init__(parent)
         self.setWindowTitle(title)
-        self.setModal(True)
+        self.setWindowFlags(self.windowFlags() | Qt.WindowType.WindowMaximizeButtonHint)
         self.resize(*self.DEFAULT_SIZE)
 
         # if parent update size

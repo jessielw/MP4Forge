@@ -30,6 +30,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Improved logging (still some work to be done)
 - All tabs contents are now wrapped in a scrolled area box - allowing the program to stay compact but also have larger default widget sizes if needed
 - Changed to a slightly better icon for the program (still could use improvement)
+- Error window pop can now be maximized
 
 ### Fixed
 
