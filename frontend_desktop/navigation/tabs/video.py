@@ -40,8 +40,8 @@ class VideoTab(BaseTab[VideoState]):
         self.default_checkbox.hide()
         self.forced_checkbox.hide()
 
-        self.main_layout.setContentsMargins(0, 0, 0, 0)
-        self.main_layout.addStretch()
+        self.content_layout.setContentsMargins(0, 0, 0, 0)
+        self.content_layout.addStretch()
 
     @override
     @Slot(tuple)

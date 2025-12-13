@@ -224,7 +224,7 @@ class MultiSubtitleTab(QWidget):
         sub_tab.delay_spinbox.hide()
         sub_tab.media_info_tree_lbl.hide()
         sub_tab.media_info_tree.hide()
-        sub_tab.main_layout.addStretch()
+        sub_tab.content_layout.addStretch()
 
     def export_all_subtitle_states(self) -> list[SubtitleState]:
         """Export states from all subtitle track tabs (only tabs with input files)."""
