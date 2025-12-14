@@ -10,10 +10,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Queue persistence between restarts
+- Checkbox to optionally reset on job add (defaults to checked)
 
 ### Changed
 
--
+- In output tab changed button text **Add Current to Queue** to **Add to Queue**
 
 ### Fixed
 
