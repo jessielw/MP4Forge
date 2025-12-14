@@ -22,8 +22,10 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from core.enums.job_status import JobStatus
 from core.muxer import VideoMuxer
-from core.queue_manager import JobStatus, MuxJob, QueueCallback, QueueManager
+from core.payloads.mux_job import MuxJob
+from core.queue_manager import QueueCallback, QueueManager
 from frontend_desktop.context import context
 from frontend_desktop.global_signals import GSigs
 from frontend_desktop.types.nav import Tabs
@@ -112,6 +114,8 @@ class OutputTab(QWidget):
         self.worker: MuxWorker | None = None
 
         self.queue_manager = QueueManager()
+        # enable persistent storage for queue
+        self.queue_manager.enable_persistence()
         self.callback = DesktopQueueCallback(self)
         self.queue_manager.register_callback(self.callback)
         # track confirmation timers by job_id
