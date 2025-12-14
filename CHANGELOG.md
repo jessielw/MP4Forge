@@ -11,6 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Queue persistence between restarts
 - Checkbox to optionally reset on job add (defaults to checked)
+- Global reset button that is displayed once a tab has loaded a file
+  - Requires clicking **twice** to confirm that you want to reset
 
 ### Changed
 

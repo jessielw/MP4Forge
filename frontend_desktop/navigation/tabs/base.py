@@ -207,6 +207,9 @@ class BaseTab(QWidget, Generic[TState]):
         GSigs().main_window_progress_bar_busy.emit(True)
         self._media_info_worker.start()
 
+        # emit tab loaded signal
+        GSigs().tab_loaded.emit()
+
     @Slot(tuple)
     def _on_media_info_finished(self, result: tuple[MediaInfo, Path]) -> None:
         """Handles the media info worker finished signal."""

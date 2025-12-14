@@ -30,6 +30,9 @@ class GlobalSignals(QObject):
     # video generate output filepath
     video_generate_output_filepath = Signal(object)  # suggested Path
 
+    # tab loaded
+    tab_loaded = Signal()
+
     # scaling # TODO: add this feature in
     # scale_factor_changed_by_user = Signal(float)  # user hotkey changes (auto-save)
     # scale_factor_changed = Signal(float)  # all changes (UI sync)
