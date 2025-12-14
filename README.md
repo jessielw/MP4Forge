@@ -10,7 +10,7 @@ A modern MP4 muxing tool with a desktop GUI interface, powered by MP4Box.
 
 ## Features
 
-### Current Features (v2.0.0-rc)
+### Current Features (v2.0.0-rc3)
 
 - **Multi-track support**: Add multiple video, audio, subtitle, and chapter tracks to a single MP4 container
 - **Multi-track MP4 audio selection**: Select specific audio tracks from MP4 files containing multiple audio streams
@@ -24,9 +24,9 @@ A modern MP4 muxing tool with a desktop GUI interface, powered by MP4Box.
 
 ### Supported Formats
 
-**Video**: H.264/AVC, H.265/HEVC (as MP4/M4V input)  
+**Video**: H.264/AVC, H.265/HEVC, MP4/M4V  
 **Audio**: AAC, AC3, E-AC3, MP2, MP3, Opus, OGG, MP4/M4A (with multi-track selection)  
-**Subtitles**: SRT, SSA, ASS, VTT  
+**Subtitles**: SRT, SSA, ASS, VTT, MP4/M4V  
 **Chapters**: OGM, XML, MP4 (extracted from existing files)  
 **Output**: MP4 container only
 
@@ -68,7 +68,7 @@ uv run python frontend_desktop/main.py
 ## Usage
 
 1. **Add tracks**: Use the Video, Audio, Subtitles, and Chapters tabs to add input files
-   - Drag & drop files directly onto tabs
+   - Drag & drop files directly onto input fields
    - Use the file browser button
    - For multi-track MP4 audio files, a track selector dialog will appear
 2. **Configure metadata**: Set language, title, default/forced flags, and delay for each track
@@ -110,7 +110,6 @@ For portable installations, the config is stored in the `runtime/` folder alongs
 
 - **Docker/Web version**: Web-based interface with Docker deployment for headless servers (coming soon)
 - **Batch processing**: Process multiple files with templates
-- **Advanced MP4Box options**: Additional muxing flags and optimizations
 - **Video format support**: Direct support for more video codecs
 
 ## Development
