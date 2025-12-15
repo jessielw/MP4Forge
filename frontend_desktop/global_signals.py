@@ -14,6 +14,12 @@ class GlobalSignals(QObject):
     # main_window_hide = Signal(bool)
     main_window_progress_bar_busy = Signal(bool)
 
+    # preset titles updated (when user saves settings)
+    preset_titles_updated = Signal()
+
+    # switch to settings tab (from context menu)
+    switch_to_settings = Signal()
+
     # chapters
     chapters_updated = Signal(str)
 
