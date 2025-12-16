@@ -1,7 +1,7 @@
 name: Build Desktop
 
 on:
-  push:
+  pull_request:
     branches: ["main"]
   release:
     types: [published]
