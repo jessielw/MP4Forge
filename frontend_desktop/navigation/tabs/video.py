@@ -2,7 +2,7 @@ from pathlib import Path
 
 from pymediainfo import MediaInfo
 from PySide6.QtCore import Slot
-from PySide6.QtWidgets import QMessageBox, QTreeWidgetItem
+from PySide6.QtWidgets import QLineEdit, QMessageBox, QTreeWidgetItem
 from typing_extensions import override
 
 from core.job_states import VideoState
@@ -39,6 +39,14 @@ class VideoTab(BaseTab[VideoState]):
         # video tracks don't use default/forced flags
         self.default_checkbox.hide()
         self.forced_checkbox.hide()
+
+        # video uses simple text entry (no recent titles dropdown)
+        # replace the combo box from base class with a line edit
+        combo_index = self.content_layout.indexOf(self.title_combo)
+        self.title_combo.hide()
+        self.title_entry = QLineEdit(self, placeholderText="Enter title...")
+        if combo_index != -1:
+            self.content_layout.insertWidget(combo_index, self.title_entry)
 
         self.content_layout.setContentsMargins(0, 0, 9, 0)
         self.content_layout.addStretch()
