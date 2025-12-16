@@ -52,6 +52,7 @@ class MainWindow(QMainWindow):
         GSigs().main_window_progress_bar_busy.connect(
             self._on_main_window_progress_bar_busy
         )
+        GSigs().switch_to_settings.connect(self._switch_to_settings)
 
         # setup status bar
         self.status_bar = QStatusBar(self)
@@ -258,6 +259,13 @@ class MainWindow(QMainWindow):
         """Resets the reset button to its default state."""
         self.reset_btn.setText("Reset")
         self.reset_btn.hide()
+
+    @Slot()
+    def _switch_to_settings(self) -> None:
+        """Switch to the Settings tab."""
+        settings_idx = Tabs.Settings.value - 1
+        self.stacked_widget.setCurrentIndex(settings_idx)
+        self.nav.tab_button_group.button(settings_idx).setChecked(True)
 
 
 if __name__ == "__main__":
