@@ -147,5 +147,71 @@ class Config:
         """Set 'add and clear' checkbox state for output tab"""
         self.set("output", "add_and_clear", value)
 
+    @property
+    def audio_preset_titles(self) -> list[str]:
+        """Get preset audio titles list (user-configured in settings)"""
+        titles = self.get("audio", "preset_titles", [])
+        return titles if isinstance(titles, list) else []
+
+    @audio_preset_titles.setter
+    def audio_preset_titles(self, value: list[str]) -> None:
+        """Set preset audio titles list"""
+        self.set("audio", "preset_titles", value)
+
+    def add_audio_preset_title(self, title: str) -> bool:
+        """Add a title to audio presets if not already present. Returns True if added."""
+        if not title.strip():
+            return False
+        titles = self.audio_preset_titles
+        if title not in titles:
+            titles.append(title)
+            self.audio_preset_titles = titles
+            self.save()
+            return True
+        return False
+
+    def remove_audio_preset_title(self, title: str) -> bool:
+        """Remove a title from audio presets if present. Returns True if removed."""
+        titles = self.audio_preset_titles
+        if title in titles:
+            titles.remove(title)
+            self.audio_preset_titles = titles
+            self.save()
+            return True
+        return False
+
+    @property
+    def subtitle_preset_titles(self) -> list[str]:
+        """Get preset subtitle titles list (user-configured in settings)"""
+        titles = self.get("subtitle", "preset_titles", [])
+        return titles if isinstance(titles, list) else []
+
+    @subtitle_preset_titles.setter
+    def subtitle_preset_titles(self, value: list[str]) -> None:
+        """Set preset subtitle titles list"""
+        self.set("subtitle", "preset_titles", value)
+
+    def add_subtitle_preset_title(self, title: str) -> bool:
+        """Add a title to subtitle presets if not already present. Returns True if added."""
+        if not title.strip():
+            return False
+        titles = self.subtitle_preset_titles
+        if title not in titles:
+            titles.append(title)
+            self.subtitle_preset_titles = titles
+            self.save()
+            return True
+        return False
+
+    def remove_subtitle_preset_title(self, title: str) -> bool:
+        """Remove a title from subtitle presets if present. Returns True if removed."""
+        titles = self.subtitle_preset_titles
+        if title in titles:
+            titles.remove(title)
+            self.subtitle_preset_titles = titles
+            self.save()
+            return True
+        return False
+
 
 Conf = Config()
