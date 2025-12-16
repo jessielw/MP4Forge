@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Requires clicking **twice** to confirm that you want to reset
 - Add the ability to remember previous titles for audio/subtitles for quick access
   - Can be managed inline by right clicking the combobox or in the settings tab
+- Now keeps common languages near the top of the language combobox widgets
 
 ### Changed
 
