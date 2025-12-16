@@ -173,7 +173,7 @@ wheels = [
 
 [[package]]
 name = "mp4-forge"
-version = "2.0.0rc2"
+version = "2.0.0rc4"
 source = { editable = "." }
 
 [package.optional-dependencies]
