@@ -3,6 +3,8 @@ from pathlib import Path
 from typing import Any
 
 from pymediainfo import MediaInfo
+from PySide6.QtCore import Qt, Slot
+from PySide6.QtGui import QCursor
 from PySide6.QtWidgets import (
     QMessageBox,
     QTreeWidgetItem,
@@ -11,6 +13,7 @@ from PySide6.QtWidgets import (
 )
 from typing_extensions import override
 
+from core.config import Conf
 from core.job_states import AudioState
 from core.utils.language import detect_language_from_filename, get_full_language_str
 from frontend_desktop.global_signals import GSigs
@@ -46,10 +49,76 @@ class AudioTab(BaseTab[AudioState]):
         # for MediaInfo array access: iterate audio_tracks directly (already filtered)
         self.selected_track_id: int | None = None
 
+        # populate preset titles from config
+        self._populate_preset_titles()
+
+        # setup context menu for title combo
+        self.title_combo.setToolTip("Right-click for more options")
+        self.title_combo.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        self.title_combo.customContextMenuRequested.connect(
+            self._context_menu_requested
+        )
+
+        # listen for settings updates
+        GSigs().preset_titles_updated.connect(self._populate_preset_titles)
+
+    @Slot()
+    def _context_menu_requested(self) -> None:
+        """Show context menu for title combo box."""
+        self._show_title_context_menu(
+            self,
+            self.title_combo,
+            self.title_combo.mapFromGlobal(QCursor.pos()),
+            Conf.audio_preset_titles,
+            self._remove_title_from_presets,
+            self._add_title_to_presets,
+        )
+
+    def _populate_preset_titles(self) -> None:
+        """Load preset titles from config into combo box"""
+        # preserve current text
+        current_text = self.title_combo.currentText()
+
+        # clear and reload
+        self.title_combo.clear()
+        preset_titles = [""] + Conf.audio_preset_titles  # always include empty option
+        if preset_titles:
+            self.title_combo.addItems(preset_titles)
+
+        # restore selection if still valid
+        if current_text:
+            index = self.title_combo.findText(current_text)
+            if index != -1:
+                self.title_combo.setCurrentIndex(index)
+            else:
+                self.title_combo.setCurrentText(current_text)
+
+    def _add_title_to_presets(self, title: str) -> None:
+        """Add current title to preset list"""
+        if Conf.add_audio_preset_title(title):
+            GSigs().preset_titles_updated.emit()
+
+    def _remove_title_from_presets(self, title: str) -> None:
+        """Remove current title from preset list"""
+        if Conf.remove_audio_preset_title(title):
+            GSigs().preset_titles_updated.emit()
+
+    def _load_default_flag(self, media_info: MediaInfo) -> None:
+        """Load default flag from media info."""
+        is_default = False
+        if self.selected_track_id is not None:
+            for track in media_info.audio_tracks:
+                if track.track_id == self.selected_track_id:
+                    # check if track is marked as default
+                    default_val = getattr(track, "default", None)
+                    if default_val and str(default_val).lower() in ("yes", "true", "1"):
+                        is_default = True
+                    break
+        self.default_checkbox.setChecked(is_default)
+
     @override
     def _load_language(self, media_info: MediaInfo) -> None:
         """Loads language from media info into the language combo box."""
-        # find track by track_id in audio_tracks array
         lang = None
         if self.selected_track_id is not None:
             for track in media_info.audio_tracks:
@@ -60,7 +129,6 @@ class AudioTab(BaseTab[AudioState]):
         if lang:
             full_lang = get_full_language_str(lang)
             if full_lang:
-                # find index in combo box
                 index = self.lang_combo.findText(full_lang)
                 if index != -1:
                     self.lang_combo.setCurrentIndex(index)
@@ -78,28 +146,14 @@ class AudioTab(BaseTab[AudioState]):
 
     @override
     def _load_title(self, media_info: MediaInfo) -> None:
-        """Loads title from media info into the title entry."""
+        """Loads title from media info into the title combo."""
         title = ""
-        # find track by track_id in audio_tracks array
         if self.selected_track_id is not None:
             for track in media_info.audio_tracks:
                 if track.track_id == self.selected_track_id:
                     title = track.title or ""
                     break
-        self.title_entry.setText(title)
-
-    def _load_default_flag(self, media_info: MediaInfo) -> None:
-        """Load default flag from media info."""
-        is_default = False
-        if self.selected_track_id is not None:
-            for track in media_info.audio_tracks:
-                if track.track_id == self.selected_track_id:
-                    # check if track is marked as default
-                    default_val = getattr(track, "default", None)
-                    if default_val and str(default_val).lower() in ("yes", "true", "1"):
-                        is_default = True
-                    break
-        self.default_checkbox.setChecked(is_default)
+        self.title_combo.setCurrentText(title)
 
     @override
     def _load_media_info_into_tree(self, media_info: MediaInfo) -> None:
@@ -208,11 +262,12 @@ class AudioTab(BaseTab[AudioState]):
     @override
     def export_state(self) -> AudioState | None:
         """Exports the current state."""
+        title_text = self.title_combo.currentText().strip()
         return (
             AudioState(
                 input_file=Path(self.input_entry.toPlainText().strip()),
                 language=self.lang_combo.currentData(),
-                title=self.title_entry.text().strip(),
+                title=title_text,
                 delay_ms=self.delay_spinbox.value(),
                 default=self.default_checkbox.isChecked(),
                 track_id=self.selected_track_id,
