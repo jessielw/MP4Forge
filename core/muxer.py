@@ -7,8 +7,10 @@ from uuid import UUID
 
 import psutil
 
+from core.enums.job_status import JobStatus
 from core.logger import LOG
-from core.queue_manager import JobStatus, MuxJob, QueueManager
+from core.payloads.mux_job import MuxJob
+from core.queue_manager import QueueManager
 
 
 class ProgressCallback:

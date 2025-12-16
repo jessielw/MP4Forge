@@ -14,6 +14,12 @@ class GlobalSignals(QObject):
     # main_window_hide = Signal(bool)
     main_window_progress_bar_busy = Signal(bool)
 
+    # preset titles updated (when user saves settings)
+    preset_titles_updated = Signal()
+
+    # switch to settings tab (from context menu)
+    switch_to_settings = Signal()
+
     # chapters
     chapters_updated = Signal(str)
 
@@ -29,6 +35,9 @@ class GlobalSignals(QObject):
 
     # video generate output filepath
     video_generate_output_filepath = Signal(object)  # suggested Path
+
+    # tab loaded
+    tab_loaded = Signal()
 
     # scaling # TODO: add this feature in
     # scale_factor_changed_by_user = Signal(float)  # user hotkey changes (auto-save)

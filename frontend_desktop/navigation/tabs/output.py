@@ -6,8 +6,10 @@ from uuid import UUID
 from PySide6.QtCore import QSize, Qt, QThread, QTimer, Signal, Slot
 from PySide6.QtGui import QColor
 from PySide6.QtWidgets import (
+    QCheckBox,
     QFileDialog,
     QFrame,
+    QGridLayout,
     QHBoxLayout,
     QHeaderView,
     QLabel,
@@ -22,8 +24,10 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from core.enums.job_status import JobStatus
 from core.muxer import VideoMuxer
-from core.queue_manager import JobStatus, MuxJob, QueueCallback, QueueManager
+from core.payloads.mux_job import MuxJob
+from core.queue_manager import QueueCallback, QueueManager
 from frontend_desktop.context import context
 from frontend_desktop.global_signals import GSigs
 from frontend_desktop.types.nav import Tabs
@@ -112,6 +116,8 @@ class OutputTab(QWidget):
         self.worker: MuxWorker | None = None
 
         self.queue_manager = QueueManager()
+        # enable persistent storage for queue
+        self.queue_manager.enable_persistence()
         self.callback = DesktopQueueCallback(self)
         self.queue_manager.register_callback(self.callback)
         # track confirmation timers by job_id
@@ -176,8 +182,13 @@ class OutputTab(QWidget):
         )
 
         # control buttons
-        self.add_current_btn = QPushButton("Add Current to Queue", self)
-        self.add_current_btn.clicked.connect(self._add_current_job)
+        self.add_and_clear = QCheckBox("Reset Tabs on Add", self)
+        self.add_and_clear.setToolTip(
+            "Add current job to queue and resets tabs automatically"
+        )
+
+        self.add_to_queue_btn = QPushButton("Add to Queue", self)
+        self.add_to_queue_btn.clicked.connect(self._add_current_job)
 
         self.clear_completed_btn = QPushButton("Clear Completed", self)
         self.clear_completed_btn.clicked.connect(self._clear_completed)
@@ -186,11 +197,12 @@ class OutputTab(QWidget):
         self.start_queue_btn.clicked.connect(self._start_queue)
         self.start_queue_btn.setCheckable(True)
 
-        btn_layout = QHBoxLayout()
-        btn_layout.addWidget(self.add_current_btn)
-        btn_layout.addWidget(self.clear_completed_btn)
-        btn_layout.addStretch()
-        btn_layout.addWidget(self.start_queue_btn)
+        btn_layout = QGridLayout()
+        btn_layout.addWidget(self.add_and_clear, 0, 0)
+        btn_layout.addWidget(self.add_to_queue_btn, 1, 0)
+        btn_layout.setColumnStretch(1, 1)
+        btn_layout.addWidget(self.clear_completed_btn, 0, 2)
+        btn_layout.addWidget(self.start_queue_btn, 1, 2)
 
         # stats and progress bar
         self.stats_label = QLabel("Queue: 0 jobs | 0 queued | 0 processing", self)
@@ -210,8 +222,19 @@ class OutputTab(QWidget):
         self.main_layout.addLayout(stats_layout)
         self.main_layout.addStretch()
 
+        # load checkbox state from config
+        self.add_and_clear.setChecked(self.main_window.conf.output_add_and_clear)
+        # save checkbox state to config when changed
+        self.add_and_clear.stateChanged.connect(self._on_add_and_clear_changed)
+
         # initial refresh
         self._refresh_table()
+
+    @Slot()
+    def _on_add_and_clear_changed(self) -> None:
+        """Save add_and_clear checkbox state to config"""
+        self.main_window.conf.output_add_and_clear = self.add_and_clear.isChecked()
+        self.main_window.conf.save()
 
     @Slot(object)
     def _on_suggested_output_filepath(self, suggested_path: Path) -> None:
@@ -313,12 +336,13 @@ class OutputTab(QWidget):
         self.queue_manager.add_job(job)
         GSigs().main_window_update_status_tip.emit("Job added to queue", 2000)
 
-        # reset all tabs after adding job
-        video_tab.reset_tab()
-        audio_tabs.multi_track.reset_to_single_tab()
-        subtitle_tab.multi_track.reset_to_single_tab()
-        chapter_tab.reset_tab()
-        self.output_entry.clear()
+        # reset all tabs after adding job (if checkbox enabled)
+        if self.add_and_clear.isChecked():
+            video_tab.reset_tab()
+            audio_tabs.multi_track.reset_to_single_tab()
+            subtitle_tab.multi_track.reset_to_single_tab()
+            chapter_tab.reset_tab()
+            self.output_entry.clear()
 
     @Slot()
     def _clear_completed(self) -> None:

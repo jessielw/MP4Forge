@@ -15,6 +15,7 @@ from PySide6.QtWidgets import (
     QHBoxLayout,
     QMainWindow,
     QProgressBar,
+    QPushButton,
     QStatusBar,
     QWidget,
 )
@@ -51,14 +52,28 @@ class MainWindow(QMainWindow):
         GSigs().main_window_progress_bar_busy.connect(
             self._on_main_window_progress_bar_busy
         )
+        GSigs().switch_to_settings.connect(self._switch_to_settings)
 
         # setup status bar
         self.status_bar = QStatusBar(self)
         self.setStatusBar(self.status_bar)
+
+        # status progress bar
         self.status_progress_bar = QProgressBar(self)
         self.status_progress_bar.setFixedWidth(170)
         self.status_progress_bar.hide()
         self.status_bar.addPermanentWidget(self.status_progress_bar)
+
+        # timer for resetting UI after another click
+        self._reset_timer = QTimer(self, interval=3000)
+        self._reset_timer.timeout.connect(self._reset_tab_clicked)
+
+        # status reset button
+        self.reset_btn = QPushButton("Reset", self)
+        self.reset_btn.clicked.connect(self._reset_tab_clicked)
+        self.reset_btn.hide()
+        self.status_bar.addPermanentWidget(self.reset_btn)
+        GSigs().tab_loaded.connect(self._enable_reset_btn)
 
         # left nav (buttons only)
         self.nav = NavigationTabs(self)
@@ -204,6 +219,53 @@ class MainWindow(QMainWindow):
                     return True
 
         return super().eventFilter(obj, event)
+
+    @Slot()
+    def _reset_tab_clicked(self) -> None:
+        """Calls `reset_tab` if the timer is active. Otherwise, starts the timer and changes button text."""
+        if self._reset_timer.isActive():
+            self._reset()
+            self._stop_reset_timer()
+        else:
+            self.reset_btn.setText("Confirm?")
+            self._reset_timer.start(3000)
+
+    def _stop_reset_timer(self) -> None:
+        """Stops the reset timer if active."""
+        if self._reset_timer.isActive():
+            self._reset_timer.stop()
+        self._reset_reset_btn()
+
+    def _reset(self) -> None:
+        """Resets all tabs to their default state."""
+        for widget in self.tabs.values():
+            if hasattr(widget, "reset_tab"):
+                widget.reset_tab()
+            elif hasattr(widget, "multi_track"):
+                widget.multi_track.reset_to_single_tab()
+            else:
+                LOG.warning(
+                    f"Tab {widget} does not have a reset_tab method or multi_track attribute."
+                )
+
+        self._reset_reset_btn()
+
+    def _enable_reset_btn(self) -> None:
+        """Enables the reset button."""
+        self._stop_reset_timer()
+        self.reset_btn.show()
+
+    def _reset_reset_btn(self) -> None:
+        """Resets the reset button to its default state."""
+        self.reset_btn.setText("Reset")
+        self.reset_btn.hide()
+
+    @Slot()
+    def _switch_to_settings(self) -> None:
+        """Switch to the Settings tab."""
+        settings_idx = Tabs.Settings.value - 1
+        self.stacked_widget.setCurrentIndex(settings_idx)
+        self.nav.tab_button_group.button(settings_idx).setChecked(True)
 
 
 if __name__ == "__main__":

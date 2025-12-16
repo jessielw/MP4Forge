@@ -1,17 +1,18 @@
 from abc import abstractmethod
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from pathlib import Path
 from typing import Generic, Protocol, TypeVar
 
 from pymediainfo import MediaInfo
-from PySide6.QtCore import QSize, Qt, QTimer, Slot
+from PySide6.QtCore import QPoint, QSize, Qt, QTimer, Slot
+from PySide6.QtGui import QAction
 from PySide6.QtWidgets import (
     QCheckBox,
     QFileDialog,
     QFrame,
     QHBoxLayout,
     QLabel,
-    QLineEdit,
+    QMenu,
     QMessageBox,
     QPushButton,
     QScrollArea,
@@ -27,6 +28,7 @@ from core.utils.mediainfo import get_media_info
 from frontend_desktop.context import context
 from frontend_desktop.global_signals import GSigs
 from frontend_desktop.utils.general_worker import GeneralWorker
+from frontend_desktop.widgets.combo_box import CustomComboBox
 from frontend_desktop.widgets.dnd_factory import DNDPlainTextEdit, DNDPushButton
 from frontend_desktop.widgets.lang_combo import get_language_combo_box
 from frontend_desktop.widgets.qtawesome_theme_swapper import QTAThemeSwap
@@ -110,9 +112,15 @@ class BaseTab(QWidget, Generic[TState]):
         self.lang_lbl = QLabel("Language", self)
         self.lang_combo = get_language_combo_box(self)
 
-        # title entry
+        # title combo (editable, shows recent titles)
         self.title_lbl = QLabel("Title", self)
-        self.title_entry = QLineEdit(self, placeholderText="Enter title...")
+        self.title_combo = CustomComboBox(
+            completer=True,
+            completer_strict=False,
+            disable_mouse_wheel=True,
+            parent=self,
+        )
+        self.title_combo.lineEdit().setPlaceholderText("Enter title...")  # pyright: ignore[reportOptionalMemberAccess]
 
         # delay entry
         self.delay_lbl = QLabel("Delay (ms)", self)
@@ -146,7 +154,7 @@ class BaseTab(QWidget, Generic[TState]):
         self.content_layout.addWidget(self.lang_lbl)
         self.content_layout.addWidget(self.lang_combo)
         self.content_layout.addWidget(self.title_lbl)
-        self.content_layout.addWidget(self.title_entry)
+        self.content_layout.addWidget(self.title_combo)
         self.content_layout.addWidget(self.delay_lbl)
         self.content_layout.addWidget(self.delay_spinbox)
         self.content_layout.addLayout(flags_layout)
@@ -206,6 +214,9 @@ class BaseTab(QWidget, Generic[TState]):
         GSigs().main_window_set_disabled.emit(True)
         GSigs().main_window_progress_bar_busy.emit(True)
         self._media_info_worker.start()
+
+        # emit tab loaded signal
+        GSigs().tab_loaded.emit()
 
     @Slot(tuple)
     def _on_media_info_finished(self, result: tuple[MediaInfo, Path]) -> None:
@@ -315,6 +326,41 @@ class BaseTab(QWidget, Generic[TState]):
         self.input_entry.clear()
         self.input_entry.setToolTip("Open file...")
         self.lang_combo.setCurrentIndex(0)
-        self.title_entry.clear()
+        self.title_combo.setCurrentIndex(0)
         self.delay_spinbox.setValue(0)
         self.media_info_tree.clear()
+
+    @staticmethod
+    def _show_title_context_menu(
+        widget: QWidget,
+        combo_box: CustomComboBox,
+        pos: QPoint,
+        titles: list[str],
+        remove_cb: Callable[[str], None],
+        add_cb: Callable[[str], None],
+    ) -> None:
+        """Show context menu for title combo box for audio/subtitles tabs."""
+        menu = QMenu(widget)
+        current_text = combo_box.currentText().strip()
+
+        # add to presets action
+        if current_text:
+            is_preset = current_text in titles
+
+            if not is_preset:
+                add_action = QAction(f'Save "{current_text}" to Presets', widget)
+                add_action.triggered.connect(lambda: add_cb(current_text))
+                menu.addAction(add_action)
+            else:
+                remove_action = QAction(f'Remove "{current_text}" from Presets', widget)
+                remove_action.triggered.connect(lambda: remove_cb(current_text))
+                menu.addAction(remove_action)
+
+            menu.addSeparator()
+
+        # manage presets action
+        manage_action = QAction("Manage Presets...", widget)
+        manage_action.triggered.connect(GSigs().switch_to_settings.emit)
+        menu.addAction(manage_action)
+
+        menu.exec(combo_box.mapToGlobal(pos))

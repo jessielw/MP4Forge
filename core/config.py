@@ -57,6 +57,12 @@ class Config:
 
         doc.add("general", general)
 
+        # output settings
+        output = tomlkit.table()
+        output.add("add_and_clear", True)
+
+        doc.add("output", output)
+
         return doc
 
     def save(self) -> None:
@@ -64,20 +70,32 @@ class Config:
         with open(self.config_path, "w", encoding="utf-8") as f:
             tomlkit.dump(self._config, f)
 
-    def get(self, key: str, default: Any = None) -> Any:
-        """Get configuration value from general section"""
-        return self._config.get("general", {}).get(key, default)
+    def get(self, section: str, key: str, default: Any = None) -> Any:
+        """Get configuration value from specified section
 
-    def set(self, key: str, value: Any) -> None:
-        """Set configuration value in general section"""
-        if "general" not in self._config:
-            self._config["general"] = tomlkit.table()
-        self._config["general"][key] = value  # pyright: ignore[reportIndexIssue]
+        Args:
+            section: Config section
+            key: Configuration key to retrieve
+            default: Default value if key not found
+        """
+        return self._config.get(section, {}).get(key, default)
+
+    def set(self, section: str, key: str, value: Any) -> None:
+        """Set configuration value in specified section
+
+        Args:
+            section: Config section
+            key: Configuration key to set
+            value: Value to set
+        """
+        if section not in self._config:
+            self._config[section] = tomlkit.table()
+        self._config[section][key] = value  # pyright: ignore[reportIndexIssue]
 
     @property
     def log_level(self) -> LogLevel:
         """Get log level as enum"""
-        level_str = self.get("log_level", "INFO")
+        level_str = self.get("general", "log_level", "INFO")
         try:
             return LogLevel[level_str.upper()]
         except KeyError:
@@ -86,29 +104,29 @@ class Config:
     @log_level.setter
     def log_level(self, value: LogLevel) -> None:
         """Set log level from enum"""
-        self.set("log_level", str(value))
+        self.set("general", "log_level", str(value))
 
     @property
     def theme(self) -> str:
         """Get theme setting"""
-        return self.get("theme", "Auto")
+        return self.get("general", "theme", "Auto")
 
     @theme.setter
     def theme(self, value: str) -> None:
         """Set theme setting"""
-        self.set("theme", value)
+        self.set("general", "theme", value)
 
     @property
     def mp4box_path(self) -> str:
         """Get MP4Box executable path"""
-        stored_path = self.get("mp4box_path", "")
+        stored_path = self.get("general", "mp4box_path", "")
 
         # if empty or doesn't exist, try to auto-detect
         if not stored_path or not Path(stored_path).exists():
             detected = shutil.which("mp4box")
             if detected:
                 # cache the detected path
-                self.set("mp4box_path", detected)
+                self.set("general", "mp4box_path", detected)
                 return detected
             return "mp4box"  # fallback to hoping it's in PATH
 
@@ -117,7 +135,83 @@ class Config:
     @mp4box_path.setter
     def mp4box_path(self, value: str) -> None:
         """Set MP4Box executable path"""
-        self.set("mp4box_path", value)
+        self.set("general", "mp4box_path", value)
+
+    @property
+    def output_add_and_clear(self) -> bool:
+        """Get 'add and clear' checkbox state for output tab"""
+        return self.get("output", "add_and_clear", True)
+
+    @output_add_and_clear.setter
+    def output_add_and_clear(self, value: bool) -> None:
+        """Set 'add and clear' checkbox state for output tab"""
+        self.set("output", "add_and_clear", value)
+
+    @property
+    def audio_preset_titles(self) -> list[str]:
+        """Get preset audio titles list (user-configured in settings)"""
+        titles = self.get("audio", "preset_titles", [])
+        return titles if isinstance(titles, list) else []
+
+    @audio_preset_titles.setter
+    def audio_preset_titles(self, value: list[str]) -> None:
+        """Set preset audio titles list"""
+        self.set("audio", "preset_titles", value)
+
+    def add_audio_preset_title(self, title: str) -> bool:
+        """Add a title to audio presets if not already present. Returns True if added."""
+        if not title.strip():
+            return False
+        titles = self.audio_preset_titles
+        if title not in titles:
+            titles.append(title)
+            self.audio_preset_titles = titles
+            self.save()
+            return True
+        return False
+
+    def remove_audio_preset_title(self, title: str) -> bool:
+        """Remove a title from audio presets if present. Returns True if removed."""
+        titles = self.audio_preset_titles
+        if title in titles:
+            titles.remove(title)
+            self.audio_preset_titles = titles
+            self.save()
+            return True
+        return False
+
+    @property
+    def subtitle_preset_titles(self) -> list[str]:
+        """Get preset subtitle titles list (user-configured in settings)"""
+        titles = self.get("subtitle", "preset_titles", [])
+        return titles if isinstance(titles, list) else []
+
+    @subtitle_preset_titles.setter
+    def subtitle_preset_titles(self, value: list[str]) -> None:
+        """Set preset subtitle titles list"""
+        self.set("subtitle", "preset_titles", value)
+
+    def add_subtitle_preset_title(self, title: str) -> bool:
+        """Add a title to subtitle presets if not already present. Returns True if added."""
+        if not title.strip():
+            return False
+        titles = self.subtitle_preset_titles
+        if title not in titles:
+            titles.append(title)
+            self.subtitle_preset_titles = titles
+            self.save()
+            return True
+        return False
+
+    def remove_subtitle_preset_title(self, title: str) -> bool:
+        """Remove a title from subtitle presets if present. Returns True if removed."""
+        titles = self.subtitle_preset_titles
+        if title in titles:
+            titles.remove(title)
+            self.subtitle_preset_titles = titles
+            self.save()
+            return True
+        return False
 
 
 Conf = Config()

@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.0-rc4] - 2025-12-??
+
+### Added
+
+- Queue persistence between restarts
+- Checkbox to optionally reset on job add (defaults to checked)
+- Global reset button that is displayed once a tab has loaded a file
+  - Requires clicking **twice** to confirm that you want to reset
+- Add the ability to remember previous titles for audio/subtitles for quick access
+  - Can be managed inline by right clicking the combobox or in the settings tab
+- Now keeps common languages near the top of the language combobox widgets
+
+### Changed
+
+- In output tab changed button text **Add Current to Queue** to **Add to Queue**
+
+### Fixed
+
+-
+
 ## [2.0.0-rc3] - 2025-12-13
 
 ### Added

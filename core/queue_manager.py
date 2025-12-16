@@ -1,58 +1,9 @@
-from dataclasses import dataclass, field
 from datetime import datetime
-from enum import Enum, auto
-from pathlib import Path
-from typing import Optional
-from uuid import UUID, uuid4
+from uuid import UUID
 
-from core.job_states import AudioState, ChapterState, SubtitleState, VideoState
-
-
-class JobStatus(Enum):
-    """Status of a muxing job"""
-
-    QUEUED = auto()
-    PROCESSING = auto()
-    COMPLETED = auto()
-    FAILED = auto()
-    CANCELLED = auto()
-
-
-@dataclass
-class MuxJob:
-    """Represents a single muxing job with full metadata"""
-
-    job_id: UUID = field(default_factory=uuid4)
-    video: Optional[VideoState] = None
-    audio_tracks: list[AudioState] = field(default_factory=list)
-    subtitle_tracks: list[SubtitleState] = field(default_factory=list)
-    chapters: Optional[ChapterState] = None
-    output_file: Path = Path("output.mp4")
-    status: JobStatus = JobStatus.QUEUED
-    progress: float = 0.0
-    error_message: Optional[str] = None
-    created_at: datetime = field(default_factory=datetime.now)
-    started_at: Optional[datetime] = None
-    completed_at: Optional[datetime] = None
-
-    def to_dict(self) -> dict:
-        """Export job as dictionary for serialization"""
-        return {
-            "job_id": str(self.job_id),
-            "video": self.video.to_dict() if self.video else None,
-            "audio_tracks": [track.to_dict() for track in self.audio_tracks],
-            "subtitle_tracks": [track.to_dict() for track in self.subtitle_tracks],
-            "chapters": self.chapters.to_dict() if self.chapters else None,
-            "output_file": str(self.output_file),
-            "status": self.status.name,
-            "progress": self.progress,
-            "error_message": self.error_message,
-            "created_at": self.created_at.isoformat(),
-            "started_at": self.started_at.isoformat() if self.started_at else None,
-            "completed_at": self.completed_at.isoformat()
-            if self.completed_at
-            else None,
-        }
+from core.enums.job_status import JobStatus
+from core.payloads.mux_job import MuxJob
+from core.queue_storage import QueueStorage
 
 
 class QueueCallback:
@@ -72,7 +23,7 @@ class QueueCallback:
 
 
 class QueueManager:
-    """Manages the job queue - singleton pattern"""
+    """Manages the job queue - singleton pattern with persistent storage"""
 
     _instance = None
 
@@ -87,7 +38,45 @@ class QueueManager:
             self.queue_order: list[UUID] = []
             self.callbacks: list[QueueCallback] = []
             self.is_processing = False
+            self.storage: QueueStorage | None = None
             self._initialized = True
+
+    def enable_persistence(self, storage: QueueStorage | None = None):
+        """Enable persistent storage for the queue
+
+        Args:
+            storage: QueueStorage instance. If None, creates default instance.
+        """
+        if storage is None:
+            from core.queue_storage import QueueStorage
+
+            storage = QueueStorage()
+
+        self.storage = storage
+        self._load_from_storage()
+
+    def _load_from_storage(self):
+        """Load jobs from persistent storage on startup"""
+        if not self.storage:
+            return
+
+        from core.queue_storage import deserialize_job_data
+
+        loaded_jobs = self.storage.load_all_jobs()
+        for job_id, job_data, position in loaded_jobs:
+            job = deserialize_job_data(job_id, job_data)
+            self.jobs[job_id] = job
+            self.queue_order.append(job_id)
+
+    def _save_to_storage(self):
+        """Save current queue state to persistent storage"""
+        if not self.storage:
+            return
+
+        for position, job_id in enumerate(self.queue_order):
+            job = self.jobs.get(job_id)
+            if job:
+                self.storage.save_job(job, position)
 
     def register_callback(self, callback: QueueCallback):
         """Register a callback for queue updates"""
@@ -104,12 +93,16 @@ class QueueManager:
         self.jobs[job.job_id] = job
         self.queue_order.append(job.job_id)
 
+        # persist to storage
+        if self.storage:
+            self.storage.save_job(job, len(self.queue_order) - 1)
+
         for callback in self.callbacks:
             callback.on_job_added(job)
 
         return job.job_id
 
-    def get_job(self, job_id: UUID) -> Optional[MuxJob]:
+    def get_job(self, job_id: UUID) -> MuxJob | None:
         """Get a specific job by ID"""
         return self.jobs.get(job_id)
 
@@ -122,7 +115,7 @@ class QueueManager:
         return [j for j in self.get_all_jobs() if j.status == JobStatus.QUEUED]
 
     def update_job_status(
-        self, job_id: UUID, status: JobStatus, error: Optional[str] = None
+        self, job_id: UUID, status: JobStatus, error: str | None = None
     ):
         """Update job status"""
         job = self.jobs.get(job_id)
@@ -138,11 +131,18 @@ class QueueManager:
         elif status in (JobStatus.COMPLETED, JobStatus.FAILED, JobStatus.CANCELLED):
             job.completed_at = datetime.now()
 
+        # persist status change
+        if self.storage:
+            position = (
+                self.queue_order.index(job_id) if job_id in self.queue_order else 0
+            )
+            self.storage.save_job(job, position)
+
         for callback in self.callbacks:
             callback.on_job_status_changed(job)
 
     def update_job_progress(self, job_id: UUID, progress: float, message: str = ""):
-        """Update job progress"""
+        """Update job progress (not persisted - transient state only)"""
         job = self.jobs.get(job_id)
         if not job:
             return
@@ -159,6 +159,10 @@ class QueueManager:
         if job_id in self.queue_order:
             self.queue_order.remove(job_id)
 
+        # remove from storage
+        if self.storage:
+            self.storage.delete_job(job_id)
+
     def clear_completed(self):
         """Remove all completed/failed/cancelled jobs"""
         to_remove = [
@@ -169,6 +173,10 @@ class QueueManager:
         ]
         for jid in to_remove:
             self.remove_job(jid)
+
+        # batch delete from storage
+        if self.storage:
+            self.storage.delete_completed_jobs()
 
     def cancel_job(self, job_id: UUID):
         """Cancel a specific job (queued or processing)"""
