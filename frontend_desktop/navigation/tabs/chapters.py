@@ -28,7 +28,7 @@ class ChapterTab(BaseTab[ChapterState]):
         self.lang_lbl.hide()
         self.lang_combo.hide()
         self.title_lbl.hide()
-        self.title_entry.hide()
+        self.title_combo.hide()
         self.delay_lbl.hide()
         self.delay_spinbox.hide()
         self.default_checkbox.hide()
