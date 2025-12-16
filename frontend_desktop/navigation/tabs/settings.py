@@ -20,7 +20,9 @@ from core.logger import LOG, LogLevel
 from frontend_desktop.global_signals import GSigs
 from frontend_desktop.utils.file_utils import open_explorer
 from frontend_desktop.widgets.combo_box import CustomComboBox
+from frontend_desktop.widgets.preset_title_editor import PresetTitleEditor
 from frontend_desktop.widgets.qtawesome_theme_swapper import QTAThemeSwap
+from frontend_desktop.widgets.utils import build_h_line
 
 
 class SettingsTab(QWidget):
@@ -34,6 +36,9 @@ class SettingsTab(QWidget):
 
         # create content widget
         content_widget = QWidget()
+
+        # listen for preset title updates from other tabs
+        GSigs().preset_titles_updated.connect(self._reload_preset_editors)
 
         ######### ui elements #########
         # theme selection
@@ -78,6 +83,30 @@ class SettingsTab(QWidget):
         path_layout = QHBoxLayout()
         path_layout.addWidget(self.mp4box_line_edit)
         path_layout.addWidget(mp4box_btn)
+
+        # audio preset titles
+        audio_titles_lbl = QLabel("Audio Preset Titles", content_widget)
+        audio_titles_desc = QLabel(
+            "<i>Quick-access titles for audio tracks (e.g., 'Commentary', 'Director's Commentary')</i>",
+            content_widget,
+            wordWrap=True,
+        )
+        audio_titles_desc.setDisabled(True)
+        self.audio_titles_editor = PresetTitleEditor(content_widget)
+        self.audio_titles_editor.set_titles(Conf.audio_preset_titles)
+        self.audio_titles_editor.setMinimumHeight(200)
+
+        # subtitle preset titles
+        subtitle_titles_lbl = QLabel("Subtitle Preset Titles", content_widget)
+        subtitle_titles_desc = QLabel(
+            "<i>Quick-access titles for subtitle tracks (e.g., 'SDH', 'Forced', 'Signs & Songs')</i>",
+            content_widget,
+            wordWrap=True,
+        )
+        subtitle_titles_desc.setDisabled(True)
+        self.subtitle_titles_editor = PresetTitleEditor(content_widget)
+        self.subtitle_titles_editor.set_titles(Conf.subtitle_preset_titles)
+        self.subtitle_titles_editor.setMinimumHeight(200)
         ######### ui elements #########
 
         # content layout
@@ -88,6 +117,14 @@ class SettingsTab(QWidget):
         content_layout.addLayout(log_level_layout)
         content_layout.addWidget(mp4box_lbl)
         content_layout.addLayout(path_layout)
+        content_layout.addWidget(build_h_line((10, 10, 10, 10)))
+        content_layout.addWidget(audio_titles_lbl)
+        content_layout.addWidget(audio_titles_desc)
+        content_layout.addWidget(self.audio_titles_editor)
+        content_layout.addWidget(build_h_line((10, 10, 10, 10)))
+        content_layout.addWidget(subtitle_titles_lbl)
+        content_layout.addWidget(subtitle_titles_desc)
+        content_layout.addWidget(self.subtitle_titles_editor)
         content_layout.addStretch()
 
         # set content widget in scroll area
@@ -151,6 +188,16 @@ class SettingsTab(QWidget):
         Conf.theme = self.theme_combo.currentText()
         Conf.log_level = self.log_level_combo.currentData()
         Conf.mp4box_path = self.mp4box_line_edit.text()
+        Conf.audio_preset_titles = self.audio_titles_editor.get_titles()
+        Conf.subtitle_preset_titles = self.subtitle_titles_editor.get_titles()
         Conf.save()
 
+        # notify tabs to reload preset titles
+        GSigs().preset_titles_updated.emit()
+
+    @Slot()
+    def _reload_preset_editors(self) -> None:
+        """Reload preset title editors from config (when updated from other tabs)"""
+        self.audio_titles_editor.set_titles(Conf.audio_preset_titles)
+        self.subtitle_titles_editor.set_titles(Conf.subtitle_preset_titles)
         GSigs().main_window_update_status_tip.emit("Settings saved successfully", 2000)
