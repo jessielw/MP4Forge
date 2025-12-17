@@ -9,7 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- 
+- Settings panel is now split into tabs
+  - General tab is the same as settings was previously
+  - Added about tab with some misc information about the program
 
 ### Changed
 
