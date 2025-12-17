@@ -6,6 +6,7 @@ import tomlkit
 from dotenv import load_dotenv
 from tomlkit.toml_document import TOMLDocument
 
+from core.__version__ import __version__
 from core.logger import LogLevel
 from core.utils.working_dir import CONFIG_DIR
 
@@ -22,6 +23,9 @@ class Config:
         self.config_path = config_path or CONFIG_DIR / "config.toml"
         self.config_path.parent.mkdir(parents=True, exist_ok=True)
         self._config: TOMLDocument = self._load()
+
+        # instance variables for easy access
+        self.version = str(__version__)
 
     def _load(self) -> TOMLDocument:
         """Load configuration from file or create default"""
