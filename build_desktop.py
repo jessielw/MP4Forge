@@ -4,6 +4,10 @@ import shutil
 from pathlib import Path
 from subprocess import run
 
+# Import macOS app builder if on macOS
+if platform.system() == "Darwin":
+    from build_macos_app import create_app_bundle
+
 
 def get_executable_extension() -> str:
     return ".exe" if platform.system() == "Windows" else ""
@@ -116,6 +120,35 @@ def build_app():
 
     # change directory back to original directory
     os.chdir(desktop_script.parent)
+
+    # On macOS, create a proper .app bundle
+    if platform.system() == "Darwin" and onedir_path.is_file():
+        try:
+            # Get version from pyproject.toml
+            try:
+                import tomllib
+            except ImportError:
+                import tomli as tomllib
+
+            pyproject_path = project_root / "pyproject.toml"
+            with open(pyproject_path, "rb") as f:
+                pyproject = tomllib.load(f)
+            version = pyproject["project"]["version"]
+
+            # Create .app bundle
+            pyinstaller_output = pyinstaller_folder / "bundled_mode"
+            icon_png = project_root / "runtime" / "images" / "mp4.png"
+
+            app_bundle = create_app_bundle(
+                pyinstaller_output_dir=pyinstaller_output,
+                app_name="Mp4Forge",
+                version=version,
+                bundle_identifier="io.github.jessielw.mp4forge",
+                icon_path=icon_png if icon_png.exists() else None,
+            )
+            success_msgs.append(f"macOS app bundle created: {app_bundle}")
+        except Exception as e:
+            success_msgs.append(f"Warning: Failed to create .app bundle: {e}")
 
     return "\n".join(success_msgs)
 
