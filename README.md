@@ -48,12 +48,14 @@ A modern MP4 muxing tool with a desktop GUI interface, powered by MP4Box.
 1. Go to the [Releases](https://github.com/jessielw/MP4-Mux-Tool/releases) page
 2. Download the archive for your platform:
    - **Windows**: `Mp4Forge-Windows.zip`
-   - **macOS**: `Mp4Forge-macOS.zip`
+   - **macOS (Apple Silicon)**: `Mp4Forge-macOS-ARM64.zip`
+   - **macOS (Intel)**: `Mp4Forge-macOS-Intel.zip`
    - **Linux**: `Mp4Forge-Linux.tar.gz`
 3. Extract the archive
-4. Run the executable:
-   - Windows: `Mp4Forge.exe`
-   - macOS/Linux: `./Mp4Forge`
+4. Run the application:
+   - **Windows**: Run `Mp4Forge.exe`
+   - **macOS**: Extract the .zip and drag `Mp4Forge.app` to your Applications folder, then launch from Launchpad or Finder
+   - **Linux**: Run `./Mp4Forge`
 
 ### Option 2: Run from Source
 
