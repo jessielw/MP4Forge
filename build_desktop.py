@@ -13,6 +13,17 @@ def get_executable_extension() -> str:
     return ".exe" if platform.system() == "Windows" else ""
 
 
+def load_toml(file_path: Path) -> dict:
+    """Load TOML file, handling different Python versions."""
+    try:
+        import tomllib
+    except ImportError:
+        import tomli as tomllib
+    
+    with open(file_path, "rb") as f:
+        return tomllib.load(f)
+
+
 # def get_site_packages() -> Path:
 #     output = run(
 #         ("uv", "pip", "show", "PySide6"),
@@ -113,30 +124,28 @@ def build_app():
 
     # Check onedir (bundle) build
     onedir_path = Path("bundled_mode") / "Mp4Forge" / f"Mp4Forge{exe_str}"
-    if onedir_path.is_file() and str(build_job_onedir.returncode) == "0":
+    build_succeeded = onedir_path.is_file() and str(build_job_onedir.returncode) == "0"
+    
+    if build_succeeded:
         success_msgs.append(f"Bundle build success! Path: {Path.cwd() / onedir_path}")
     else:
         success_msgs.append("Bundle build did not complete successfully")
+
+    # Store absolute path before changing directory
+    pyinstaller_output = pyinstaller_folder / "bundled_mode"
 
     # change directory back to original directory
     os.chdir(desktop_script.parent)
 
     # On macOS, create a proper .app bundle
-    if platform.system() == "Darwin" and onedir_path.is_file():
+    if platform.system() == "Darwin" and build_succeeded:
         try:
             # Get version from pyproject.toml
-            try:
-                import tomllib
-            except ImportError:
-                import tomli as tomllib
-
             pyproject_path = project_root / "pyproject.toml"
-            with open(pyproject_path, "rb") as f:
-                pyproject = tomllib.load(f)
+            pyproject = load_toml(pyproject_path)
             version = pyproject["project"]["version"]
 
-            # Create .app bundle
-            pyinstaller_output = pyinstaller_folder / "bundled_mode"
+            # Create .app bundle (pyinstaller_output already defined above)
             icon_png = project_root / "runtime" / "images" / "mp4.png"
 
             app_bundle = create_app_bundle(

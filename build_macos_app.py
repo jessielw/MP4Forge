@@ -9,6 +9,17 @@ import shutil
 from pathlib import Path
 
 
+def load_toml(file_path: Path) -> dict:
+    """Load TOML file, handling different Python versions."""
+    try:
+        import tomllib
+    except ImportError:
+        import tomli as tomllib
+    
+    with open(file_path, "rb") as f:
+        return tomllib.load(f)
+
+
 def create_icns_from_png(png_path: Path, output_icns: Path) -> bool:
     """
     Convert PNG to ICNS format using sips (macOS built-in tool).
@@ -180,13 +191,7 @@ if __name__ == "__main__":
     icon_path = project_root / "runtime" / "images" / "mp4.png"
 
     # Get version from pyproject.toml
-    try:
-        import tomllib
-    except ImportError:
-        import tomli as tomllib
-
-    with open(project_root / "pyproject.toml", "rb") as f:
-        pyproject = tomllib.load(f)
+    pyproject = load_toml(project_root / "pyproject.toml")
     version = pyproject["project"]["version"]
 
     app_bundle = create_app_bundle(
