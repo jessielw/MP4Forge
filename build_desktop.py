@@ -1,12 +1,12 @@
 import os
 import platform
+import plistlib
 import shutil
+import subprocess
 from pathlib import Path
 from subprocess import run
 
-# Import macOS app builder if on macOS
-if platform.system() == "Darwin":
-    from build_macos_app import create_app_bundle
+import tomllib
 
 
 def get_executable_extension() -> str:
@@ -15,13 +15,175 @@ def get_executable_extension() -> str:
 
 def load_toml(file_path: Path) -> dict:
     """Load TOML file, handling different Python versions."""
-    try:
-        import tomllib
-    except ImportError:
-        import tomli as tomllib
-    
     with open(file_path, "rb") as f:
         return tomllib.load(f)
+
+
+def create_icns_from_png(png_path: Path, output_icns: Path) -> bool:
+    """
+    Convert PNG to ICNS format using sips (macOS built-in tool).
+    Returns True if successful, False otherwise.
+    """
+    try:
+        if platform.system() != "Darwin":
+            print("Warning: ICNS conversion is only supported on macOS")
+            return False
+
+        # create iconset directory
+        iconset_dir = output_icns.parent / f"{output_icns.stem}.iconset"
+        iconset_dir.mkdir(exist_ok=True)
+
+        # generate different sizes required for ICNS
+        sizes = [16, 32, 64, 128, 256, 512, 1024]
+        for size in sizes:
+            output_file = iconset_dir / f"icon_{size}x{size}.png"
+            subprocess.run(
+                [
+                    "sips",
+                    "-z",
+                    str(size),
+                    str(size),
+                    str(png_path),
+                    "--out",
+                    str(output_file),
+                ],
+                check=True,
+                capture_output=True,
+            )
+
+            # create @2x versions for retina displays (except for largest size)
+            if size <= 512:
+                retina_size = size * 2
+                output_file_2x = iconset_dir / f"icon_{size}x{size}@2x.png"
+                subprocess.run(
+                    [
+                        "sips",
+                        "-z",
+                        str(retina_size),
+                        str(retina_size),
+                        str(png_path),
+                        "--out",
+                        str(output_file_2x),
+                    ],
+                    check=True,
+                    capture_output=True,
+                )
+
+        # convert iconset to icns
+        subprocess.run(
+            ["iconutil", "-c", "icns", str(iconset_dir), "-o", str(output_icns)],
+            check=True,
+            capture_output=True,
+        )
+
+        # clean up iconset directory
+        shutil.rmtree(iconset_dir)
+        print(f"Created ICNS icon: {output_icns}")
+        return True
+
+    except Exception as e:
+        print(f"Failed to create ICNS: {e}")
+        return False
+
+
+def create_info_plist(app_name: str, version: str, bundle_identifier: str) -> dict:
+    """Create the Info.plist dictionary for the macOS app."""
+    return {
+        "CFBundleDevelopmentRegion": "en",
+        "CFBundleDisplayName": app_name,
+        "CFBundleExecutable": app_name,
+        "CFBundleIconFile": "AppIcon.icns",
+        "CFBundleIdentifier": bundle_identifier,
+        "CFBundleInfoDictionaryVersion": "6.0",
+        "CFBundleName": app_name,
+        "CFBundlePackageType": "APPL",
+        "CFBundleShortVersionString": version,
+        "CFBundleVersion": version,
+        "LSMinimumSystemVersion": "10.13",
+        "NSHighResolutionCapable": True,
+        "NSPrincipalClass": "NSApplication",
+        "NSRequiresAquaSystemAppearance": False,
+    }
+
+
+def create_app_bundle(
+    pyinstaller_output_dir: Path,
+    app_name: str,
+    version: str,
+    bundle_identifier: str,
+    icon_path: Path | None = None,
+) -> Path:
+    """
+    Create a macOS .app bundle from PyInstaller output.
+
+    Args:
+        pyinstaller_output_dir: Path to PyInstaller's dist output directory
+        app_name: Name of the application
+        version: Version string
+        bundle_identifier: Bundle identifier (e.g., com.example.app)
+        icon_path: Path to PNG icon file (will be converted to ICNS)
+
+    Returns:
+        Path to the created .app bundle
+    """
+    # define .app structure paths
+    app_bundle = pyinstaller_output_dir.parent / f"{app_name}.app"
+    contents_dir = app_bundle / "Contents"
+    macos_dir = contents_dir / "MacOS"
+    resources_dir = contents_dir / "Resources"
+
+    # clean up if it already exists
+    if app_bundle.exists():
+        shutil.rmtree(app_bundle)
+
+    # create directory structure
+    macos_dir.mkdir(parents=True, exist_ok=True)
+    resources_dir.mkdir(parents=True, exist_ok=True)
+
+    print(f"Creating app bundle: {app_bundle}")
+
+    # move PyInstaller contents to MacOS directory
+    # PyInstaller creates a folder with the app name containing the executable and resources
+    pyinstaller_app_dir = pyinstaller_output_dir / app_name
+    if pyinstaller_app_dir.exists():
+        # move everything from the PyInstaller output to MacOS
+        for item in pyinstaller_app_dir.iterdir():
+            dest = macos_dir / item.name
+            if item.is_dir():
+                shutil.copytree(item, dest)
+            else:
+                shutil.copy2(item, dest)
+        print(f"Copied PyInstaller output to MacOS directory")
+    else:
+        raise FileNotFoundError(f"PyInstaller output not found: {pyinstaller_app_dir}")
+
+    # handle icon
+    icns_path = resources_dir / "AppIcon.icns"
+    if icon_path and icon_path.exists():
+        if icon_path.suffix.lower() == ".png":
+            create_icns_from_png(icon_path, icns_path)
+        elif icon_path.suffix.lower() == ".icns":
+            shutil.copy2(icon_path, icns_path)
+        else:
+            print(f"Warning: Unsupported icon format: {icon_path.suffix}")
+    else:
+        print("Warning: No icon provided")
+
+    # create Info.plist
+    plist_data = create_info_plist(app_name, version, bundle_identifier)
+    plist_path = contents_dir / "Info.plist"
+    with open(plist_path, "wb") as f:
+        plistlib.dump(plist_data, f)
+    print(f"Created Info.plist")
+
+    # make the executable actually executable
+    executable = macos_dir / app_name
+    if executable.exists():
+        os.chmod(executable, 0o755)
+        print(f"Set executable permissions on {app_name}")
+
+    print(f"Successfully created app bundle: {app_bundle}")
+    return app_bundle
 
 
 # def get_site_packages() -> Path:
@@ -89,13 +251,13 @@ def build_app():
         "bundle",
         "--windowed",
     ]
-    
-    # Only add icon on Windows/Linux; macOS uses .icns which is added during .app bundle creation
+
+    # only add icon on Windows/Linux; macOS uses .icns which is added during .app bundle creation
     if platform.system() != "Darwin":
         build_args.append(f"--icon={str(icon_path)}")
-    
+
     build_args.extend(["-y", str(desktop_script)])
-    
+
     build_job_onedir = run(build_args)
 
     # cleanse included runtime folder of unneeded files
@@ -126,30 +288,30 @@ def build_app():
     # else:
     #     success_msgs.append("Onefile build did not complete successfully")
 
-    # Check onedir (bundle) build
+    # check onedir (bundle) build
     onedir_path = Path("bundled_mode") / "Mp4Forge" / f"Mp4Forge{exe_str}"
     build_succeeded = onedir_path.is_file() and str(build_job_onedir.returncode) == "0"
-    
+
     if build_succeeded:
         success_msgs.append(f"Bundle build success! Path: {Path.cwd() / onedir_path}")
     else:
         success_msgs.append("Bundle build did not complete successfully")
 
-    # Store absolute path before changing directory
+    # store absolute path before changing directory
     pyinstaller_output = pyinstaller_folder / "bundled_mode"
 
     # change directory back to original directory
     os.chdir(desktop_script.parent)
 
-    # On macOS, create a proper .app bundle
+    # on macOS, create a proper .app bundle
     if platform.system() == "Darwin" and build_succeeded:
         try:
-            # Get version from pyproject.toml
+            # get version from pyproject.toml
             pyproject_path = project_root / "pyproject.toml"
             pyproject = load_toml(pyproject_path)
             version = pyproject["project"]["version"]
 
-            # Create .app bundle (pyinstaller_output already defined above)
+            # create .app bundle (pyinstaller_output already defined above)
             icon_png = project_root / "runtime" / "images" / "mp4.png"
 
             app_bundle = create_app_bundle(
