@@ -17,6 +17,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Now shows version on title bar
 
+### Fixed
+
+- Don't attempt to add job to queue with no output path
+
 ## [2.0.0-rc4] - 2025-12-16
 
 ### Added
