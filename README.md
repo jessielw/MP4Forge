@@ -8,10 +8,7 @@ A modern MP4 muxing tool with a desktop GUI interface, powered by MP4Box.
 <img width="270" alt="image" src="https://github.com/user-attachments/assets/a73a3c9d-9341-4abd-895b-731039de4e7f" />
 <img width="270" alt="image" src="https://github.com/user-attachments/assets/12277a85-611a-448e-91cc-7c2119a3f665" />
 
-
 ## Features
-
-### Current Features (v2.0.0-rc3)
 
 - **Multi-track support**: Add multiple video, audio, subtitle, and chapter tracks to a single MP4 container
 - **Multi-track MP4 audio selection**: Select specific audio tracks from MP4 files containing multiple audio streams
@@ -22,6 +19,7 @@ A modern MP4 muxing tool with a desktop GUI interface, powered by MP4Box.
 - **Cross-platform**: Available for Windows (8+ x64), macOS, and Linux
 - **Theme support**: Light, dark, and auto themes
 - **Persistent configuration**: Settings stored in OS-appropriate locations (portable mode available)
+- **Quick access titles**: Save and use quick access titles for audio/subtitles
 
 ### Supported Formats
 
