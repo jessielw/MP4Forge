@@ -12,6 +12,10 @@ on:
         required: false
         type: boolean
         default: false
+      release_tag:
+        description: 'Tag name for existing release (e.g., 2.0.0). Leave empty for new release'
+        required: false
+        type: string
 
 jobs:
   build-windows:
@@ -69,7 +73,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: Mp4Forge-macOS-ARM64
-          path: pyinstaller_build/bundled_mode/Mp4Forge.app/
+          path: pyinstaller_build/bundled_mode/
           retention-days: 90
 
   build-macos-intel:
@@ -98,7 +102,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: Mp4Forge-macOS-Intel
-          path: pyinstaller_build/bundled_mode/Mp4Forge.app/
+          path: pyinstaller_build/bundled_mode/
           retention-days: 90
 
   build-linux:
@@ -222,6 +226,7 @@ jobs:
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ inputs.release_tag || github.ref_name }}
           files: archives/*
           draft: true
           prerelease: ${{ contains(github.ref, 'rc') || contains(github.ref, 'beta') || contains(github.ref, 'alpha') }}
