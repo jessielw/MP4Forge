@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.0] - 2025-12-18
+
+### Added
+
+- Settings panel is now split into tabs
+  - General tab is the same as settings was previously
+  - Added about tab with some misc information about the program
+
+### Changed
+
+- Now shows version on title bar
+
+### Fixed
+
+- Don't attempt to add job to queue with no output path
+
 ## [2.0.0-rc4] - 2025-12-16
 
 ### Added

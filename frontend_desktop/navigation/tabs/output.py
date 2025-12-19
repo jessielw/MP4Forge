@@ -268,8 +268,16 @@ class OutputTab(QWidget):
     @Slot()
     def _add_current_job(self) -> None:
         """Add current tab states to queue as a new job"""
+        # if nothing in output tab simply return
+        out_path = self.output_entry.toPlainText().strip()
+        if not out_path:
+            GSigs().main_window_update_status_tip.emit(
+                "Please select an output file", 3000
+            )
+            return
+
         # check if output path exists and ask to overwrite if needed
-        output_path = Path(self.output_entry.toPlainText().strip())
+        output_path = Path(out_path)
         if output_path.exists():
             if (
                 QMessageBox.question(

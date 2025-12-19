@@ -37,7 +37,7 @@ from frontend_desktop.widgets.utils import build_v_line
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Mp4Forge")
+        self.setWindowTitle(f"Mp4Forge {Conf.version}")
 
         # initialize exception handling
         self._setup_exception_hooks()

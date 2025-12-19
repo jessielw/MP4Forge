@@ -10,6 +10,7 @@ from PySide6.QtWidgets import (
     QLineEdit,
     QPushButton,
     QScrollArea,
+    QTabWidget,
     QToolButton,
     QVBoxLayout,
     QWidget,
@@ -25,14 +26,15 @@ from frontend_desktop.widgets.qtawesome_theme_swapper import QTAThemeSwap
 from frontend_desktop.widgets.utils import build_h_line
 
 
-class SettingsTab(QWidget):
+class GeneralSettingsTab(QWidget):
+    """General settings tab with scrollable content."""
+
     def __init__(self, parent=None) -> None:
         super().__init__(parent)
 
         # create scroll area
         scroll_area = QScrollArea(self, widgetResizable=True)
-        scroll_area.setFrameShape(QFrame.Shape.Box)
-        scroll_area.setFrameShadow(QFrame.Shadow.Sunken)
+        scroll_area.setFrameShape(QFrame.Shape.NoFrame)
 
         # create content widget
         content_widget = QWidget()
@@ -134,15 +136,12 @@ class SettingsTab(QWidget):
         self.save_btn = QPushButton("Save Settings", self)
         self.save_btn.clicked.connect(self._save_settings)
 
-        save_layout = QHBoxLayout()
-        save_layout.addStretch()
-        save_layout.addWidget(self.save_btn)
-
         # main layout
         self.main_layout = QVBoxLayout(self)
         self.main_layout.setContentsMargins(0, 0, 0, 0)
         self.main_layout.addWidget(scroll_area)
-        self.main_layout.addLayout(save_layout)
+        self.main_layout.addWidget(self.save_btn, alignment=Qt.AlignmentFlag.AlignRight)
+        self.main_layout.addSpacing(6)
 
     @Slot(int)
     def _change_theme(self, _: int | None = None) -> None:
@@ -201,3 +200,67 @@ class SettingsTab(QWidget):
         self.audio_titles_editor.set_titles(Conf.audio_preset_titles)
         self.subtitle_titles_editor.set_titles(Conf.subtitle_preset_titles)
         GSigs().main_window_update_status_tip.emit("Settings saved successfully", 2000)
+
+
+class AboutTab(QWidget):
+    """About tab with scrollable content."""
+
+    def __init__(self, parent=None) -> None:
+        super().__init__(parent)
+
+        # create scroll area
+        scroll_area = QScrollArea(self, widgetResizable=True)
+        scroll_area.setFrameShape(QFrame.Shape.NoFrame)
+
+        # create content widget
+        content_widget = QWidget()
+
+        ####### UI elements #######
+        app_info_lbl = QLabel(
+            f"""<h2 style="text-align: center;">Mp4Forge</h2>
+            <span style="font-weight: bold;">Version:</span> {Conf.version}<br>
+            <span style="font-weight: bold;">Homepage:</span><a href="https://github.com/jessielw/MP4Forge">
+                https://github.com/jessielw/MP4Forge</a><br>
+            <span style="font-weight: bold;">Help:</span> <a href="https://github.com/jessielw/MP4Forge/issues">
+                https://github.com/jessielw/MP4Forge/issues</a>""",
+            content_widget,
+            wordWrap=True,
+            openExternalLinks=True,
+        )
+        ####### UI elements #######
+
+        # content layout
+        content_layout = QVBoxLayout(content_widget)
+        content_layout.addWidget(app_info_lbl)
+        content_layout.addStretch()
+
+        # set content widget in scroll area
+        scroll_area.setWidget(content_widget)
+
+        # main layout
+        self.main_layout = QVBoxLayout(self)
+        self.main_layout.setContentsMargins(0, 0, 0, 0)
+        self.main_layout.addWidget(scroll_area)
+
+
+class SettingsTab(QWidget):
+    """Main settings tab with notebook interface."""
+
+    def __init__(self, parent=None) -> None:
+        super().__init__(parent)
+
+        # create tab widget
+        self.tab_widget = QTabWidget(self)
+
+        # create tabs
+        self.general_settings_tab = GeneralSettingsTab(self)
+        self.about_tab = AboutTab(self)
+
+        # add tabs to widget
+        self.tab_widget.addTab(self.general_settings_tab, "General")
+        self.tab_widget.addTab(self.about_tab, "About")
+
+        # main layout
+        self.main_layout = QVBoxLayout(self)
+        self.main_layout.setContentsMargins(0, 0, 0, 0)
+        self.main_layout.addWidget(self.tab_widget)
