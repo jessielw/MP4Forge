@@ -172,7 +172,7 @@ wheels = [
 ]
 
 [[package]]
-name = "mp4-forge"
+name = "mp4forge"
 version = "2.0.0"
 source = { editable = "." }
 

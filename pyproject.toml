@@ -1,5 +1,5 @@
 [project]
-name = "mp4-forge"
+name = "mp4forge"
 version = "2.0.0"
 description = "MP4 muxing tool with desktop and web interfaces"
 requires-python = ">=3.11,<3.14"
