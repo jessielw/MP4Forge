@@ -168,24 +168,43 @@ jobs:
         run: |
           mkdir -p archives
           
+          # Debug: Show what was downloaded
+          echo "Contents of dist directory:"
+          ls -la dist/ || true
+          echo "Contents of dist/macos-arm64:"
+          ls -la dist/macos-arm64/ || true
+          echo "Contents of dist/macos-intel:"
+          ls -la dist/macos-intel/ || true
+          
           # Windows
           if [ -d "dist/windows" ]; then
             mv dist/windows Mp4Forge
             zip -r archives/Mp4Forge-Windows.zip Mp4Forge
             mv Mp4Forge dist/windows
+            echo "✓ Created Windows archive"
           fi
 
           # macOS ARM64 .app bundle
-          if [ -d "dist/macos-arm64/Mp4Forge.app" ]; then
+          if [ -d "dist/macos-arm64" ]; then
             cd dist/macos-arm64
-            zip -r ../../archives/Mp4Forge-macOS-ARM64.zip Mp4Forge.app
+            if [ -d "Mp4Forge.app" ]; then
+              zip -r ../../archives/Mp4Forge-macOS-ARM64.zip Mp4Forge.app
+              echo "✓ Created macOS ARM64 archive"
+            else
+              echo "⚠ Mp4Forge.app not found in dist/macos-arm64"
+            fi
             cd ../..
           fi
 
           # macOS Intel .app bundle
-          if [ -d "dist/macos-intel/Mp4Forge.app" ]; then
+          if [ -d "dist/macos-intel" ]; then
             cd dist/macos-intel
-            zip -r ../../archives/Mp4Forge-macOS-Intel.zip Mp4Forge.app
+            if [ -d "Mp4Forge.app" ]; then
+              zip -r ../../archives/Mp4Forge-macOS-Intel.zip Mp4Forge.app
+              echo "✓ Created macOS Intel archive"
+            else
+              echo "⚠ Mp4Forge.app not found in dist/macos-intel"
+            fi
             cd ../..
           fi
 
@@ -194,7 +213,11 @@ jobs:
             mv dist/linux Mp4Forge
             tar czf archives/Mp4Forge-Linux.tar.gz Mp4Forge
             mv Mp4Forge dist/linux
+            echo "✓ Created Linux archive"
           fi
+          
+          echo "Final archives:"
+          ls -lh archives/ || true
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
