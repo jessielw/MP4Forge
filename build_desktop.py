@@ -75,24 +75,28 @@ def build_app():
     # )
 
     # run pyinstaller onedir (bundle) build
-    build_job_onedir = run(
-        [
-            "uv",
-            "run",
-            "pyinstaller",
-            "-n",
-            "Mp4Forge",
-            "--distpath",
-            "bundled_mode",
-            f"--add-data={dev_runtime}:runtime",
-            "--contents-directory",
-            "bundle",
-            "--windowed",
-            f"--icon={str(icon_path)}",
-            "-y",
-            str(desktop_script),
-        ]
-    )
+    # Build command args - skip icon on macOS as it will be added during .app bundle creation
+    build_args = [
+        "uv",
+        "run",
+        "pyinstaller",
+        "-n",
+        "Mp4Forge",
+        "--distpath",
+        "bundled_mode",
+        f"--add-data={dev_runtime}:runtime",
+        "--contents-directory",
+        "bundle",
+        "--windowed",
+    ]
+    
+    # Only add icon on Windows/Linux; macOS uses .icns which is added during .app bundle creation
+    if platform.system() != "Darwin":
+        build_args.append(f"--icon={str(icon_path)}")
+    
+    build_args.extend(["-y", str(desktop_script)])
+    
+    build_job_onedir = run(build_args)
 
     # cleanse included runtime folder of unneeded files
     # whitelist of runtime subdirectories to keep in the bundled build

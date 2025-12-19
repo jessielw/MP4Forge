@@ -146,12 +146,14 @@ jobs:
 
       - name: Download macOS ARM64 artifact
         uses: actions/download-artifact@v4
+        continue-on-error: true
         with:
           name: Mp4Forge-macOS-ARM64
           path: ./dist/macos-arm64
 
       - name: Download macOS Intel artifact
         uses: actions/download-artifact@v4
+        continue-on-error: true
         with:
           name: Mp4Forge-macOS-Intel
           path: ./dist/macos-intel
@@ -165,32 +167,39 @@ jobs:
       - name: Create archives
         run: |
           mkdir -p archives
-          mv dist/windows Mp4Forge
-          zip -r archives/Mp4Forge-Windows.zip Mp4Forge
-          mv Mp4Forge dist/windows
+          
+          # Windows
+          if [ -d "dist/windows" ]; then
+            mv dist/windows Mp4Forge
+            zip -r archives/Mp4Forge-Windows.zip Mp4Forge
+            mv Mp4Forge dist/windows
+          fi
 
           # macOS ARM64 .app bundle
-          cd dist/macos-arm64
-          zip -r ../../archives/Mp4Forge-macOS-ARM64.zip Mp4Forge.app
-          cd ../..
+          if [ -d "dist/macos-arm64/Mp4Forge.app" ]; then
+            cd dist/macos-arm64
+            zip -r ../../archives/Mp4Forge-macOS-ARM64.zip Mp4Forge.app
+            cd ../..
+          fi
 
           # macOS Intel .app bundle
-          cd dist/macos-intel
-          zip -r ../../archives/Mp4Forge-macOS-Intel.zip Mp4Forge.app
-          cd ../..
+          if [ -d "dist/macos-intel/Mp4Forge.app" ]; then
+            cd dist/macos-intel
+            zip -r ../../archives/Mp4Forge-macOS-Intel.zip Mp4Forge.app
+            cd ../..
+          fi
 
-          mv dist/linux Mp4Forge
-          tar czf archives/Mp4Forge-Linux.tar.gz Mp4Forge
-          mv Mp4Forge dist/linux
+          # Linux
+          if [ -d "dist/linux" ]; then
+            mv dist/linux Mp4Forge
+            tar czf archives/Mp4Forge-Linux.tar.gz Mp4Forge
+            mv Mp4Forge dist/linux
+          fi
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
-          files: |
-            archives/Mp4Forge-Windows.zip
-            archives/Mp4Forge-macOS-ARM64.zip
-            archives/Mp4Forge-macOS-Intel.zip
-            archives/Mp4Forge-Linux.tar.gz
+          files: archives/*
           draft: true
           prerelease: ${{ contains(github.ref, 'rc') || contains(github.ref, 'beta') || contains(github.ref, 'alpha') }}
         env:
