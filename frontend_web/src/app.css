@@ -25,11 +25,17 @@
 }
 
 body {
-	font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell,
-		sans-serif;
+	width: 100vw;
+	height: 100vh;
+	height: 100svh;
+	height: 100dvh;
+	font-family: "Open Sans", sans-serif;
 	background-color: var(--bg-primary);
 	color: var(--text-primary);
-	line-height: 1.6;
+}
+
+code, pre, kbd, samp, tt, .fixed-font {
+    font-family: 'Fira Mono', "Courier New", Courier, monospace;
 }
 
 button {
