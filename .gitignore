@@ -29,3 +29,15 @@ Thumbs.db
 runtime/*
 !runtime/images/
 !runtime/.gitkeep
+
+# webui
+.DS_Store
+node_modules
+frontend_web/build
+frontend_web/.svelte-kit
+frontend_web/package
+.env
+.env.*
+!.env.example
+vite.config.js.timestamp-*
+vite.config.ts.timestamp-*
