@@ -344,6 +344,8 @@ class VideoMuxer:
             if return_code == 0:
                 self.queue_manager.update_job_status(job.job_id, JobStatus.COMPLETED)
                 self.queue_manager.update_job_progress(job.job_id, 100.0, "Completed")
+                LOG.debug(f"Mux completed successfully: {job.output_file}")
+                LOG.debug(f"Output file exists: {job.output_file.exists()}")
                 self._notify_complete(str(job.output_file))
             else:
                 # capture detailed error from all output
