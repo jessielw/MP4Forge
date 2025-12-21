@@ -13,6 +13,10 @@
 <nav class="navigation">
 	<div class="nav-buttons">
 		{#each tabs as tab}
+			<!-- add a hr between output and settings -->
+			{#if tab.id === 'settings'}
+				<hr />
+			{/if}
 			<button
 				class="nav-button"
 				class:active={$currentTab === tab.id}
