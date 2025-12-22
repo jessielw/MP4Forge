@@ -1,21 +1,80 @@
 <script lang="ts">
   import FileInput from "./FileInput.svelte";
   import LanguageSelect from "./LanguageSelect.svelte";
+  import TrackImportDialog from "./TrackImportDialog.svelte";
   import { ApiClient, LogLevel } from "$lib/api";
+  import { videoTrack, audioTracks, subtitleTracks } from "$lib/stores/tracks";
 
   interface MediaInfoRow {
     property: string;
     value: string;
   }
 
-  let videoFilePath = $state("");
-  let language = $state("");
-  let title = $state("");
-  let delay = $state(0);
-  let mediaInfo = $state<string>("");
-  let mediaInfoRows = $state<MediaInfoRow[]>([]);
-  let loading = $state(false);
+  interface Track {
+    type: "Video" | "Audio" | "Subtitle" | "Chapters";
+    id: string;
+    format: string;
+    language?: string;
+    flags?: string;
+    title?: string;
+    selected: boolean;
+    data: any;
+  }
+
   let error = $state("");
+
+  // track import dialog state
+  let showImportDialog = $state(false);
+  let importTracks = $state<Track[]>([]);
+  let importFilename = $state("");
+
+  // compute mediaInfoRows directly from videoTrack.mediaInfoData
+  const mediaInfoRows = $derived.by(() => {
+    const data = $videoTrack.mediaInfoData;
+    if (!data) return [];
+
+    const rows: MediaInfoRow[] = [];
+
+    // iterate through displayProperties to maintain order
+    for (const [key, displayName] of Object.entries(displayProperties)) {
+      const value = data[key];
+
+      if (value !== null && value !== undefined) {
+        let displayValue = String(value);
+
+        // format specific values
+        if (key === "other_duration") {
+          // we'll inject resolution in here since we want resolution before this
+          const width = data["width"];
+          const height = data["height"];
+          if (width && height) {
+            rows.push({
+              property: "Resolution",
+              value: `${width} x ${height}`,
+            });
+          }
+          // now continue getting the duration
+          displayValue = "";
+          if (Array.isArray(value) && value.length > 0) {
+            displayValue = value[0];
+          }
+        } else if (key === "other_bit_rate" && Array.isArray(value)) {
+          displayValue = "";
+          if (value.length > 0) {
+            displayValue = value[0];
+          }
+        }
+
+        // push whitelisted property/value pair
+        rows.push({
+          property: displayName,
+          value: displayValue,
+        });
+      }
+    }
+
+    return rows;
+  });
 
   // properties to display and their display names (in order)
   const displayProperties: Record<string, string> = {
@@ -37,20 +96,18 @@
   };
 
   async function loadMediaInfo() {
-    if (!videoFilePath.trim()) {
+    if (!$videoTrack.filePath.trim()) {
       error = "Please select a file";
       return;
     }
 
-    loading = true;
     error = "";
-    mediaInfo = "";
 
     try {
       const response = await fetch("/api/mediainfo", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ file_path: videoFilePath }),
+        body: JSON.stringify({ file_path: $videoTrack.filePath }),
       });
 
       if (!response.ok) {
@@ -59,95 +116,156 @@
       }
 
       const data = await response.json();
-      mediaInfo = data.mediainfo;
 
-      // parse MediaInfo JSON to extract video track info
-      parseVideoTrack(mediaInfo);
-    } catch (e) {
-      error = e instanceof Error ? e.message : "Unknown error occurred";
-    } finally {
-      loading = false;
-    }
-  }
+      // store in videoTrack for persistence
+      videoTrack.update((t) => ({ ...t, mediaInfo: data.mediainfo }));
 
-  function parseVideoTrack(jsonString: string) {
-    try {
-      const parsed = JSON.parse(jsonString);
+      // parse MediaInfo and extract video track data
+      const parsed = JSON.parse(data.mediainfo);
       const videoTrackData = parsed.tracks?.find(
         (t: any) => t["track_type"] === "Video"
       );
 
       if (videoTrackData) {
-        // build dynamic rows for table using whitelist
-        mediaInfoRows = [];
+        // store raw data and auto-populate fields
+        videoTrack.update((t) => ({
+          ...t,
+          mediaInfoData: videoTrackData,
+          language: videoTrackData["language"]?.toLowerCase() || t.language,
+          title: videoTrackData["title"] || t.title,
+          delay:
+            videoTrackData["source_delay"] ||
+            videoTrackData["delay"] ||
+            t.delay,
+        }));
+      }
 
-        // iterate through displayProperties to maintain order
-        for (const [key, displayName] of Object.entries(displayProperties)) {
-          const value = videoTrackData[key];
-
-          if (value !== null && value !== undefined) {
-            let displayValue = String(value);
-
-            // format specific values
-            if (key === "other_duration") {
-              // we'll inject resolution in here since we want resolution before this
-              const width = videoTrackData["width"];
-              const height = videoTrackData["height"];
-              if (width && height) {
-                mediaInfoRows.push({
-                  property: "Resolution",
-                  value: `${width} x ${height}`,
-                });
-              }
-              // now continue getting the duration
-              displayValue = "";
-              if (Array.isArray(value) && value.length > 0) {
-                displayValue = value[0];
-              }
-            } else if (key === "other_bit_rate" && Array.isArray(value)) {
-              displayValue = "";
-              if (value.length > 0) {
-                displayValue = value[0];
-              }
-            }
-
-            // push whitelisted property/value pair
-            mediaInfoRows.push({
-              property: displayName,
-              value: displayValue,
-            });
-          }
-        }
-
-        // extract language for auto-selection
-        const languageValue = videoTrackData["language"];
-        if (languageValue) {
-          language = String(languageValue).toLowerCase();
-        }
-
-        // set title if available
-        const titleValue = videoTrackData["title"];
-        if (titleValue) {
-          title = String(titleValue);
-        }
-
-        // set delay if available
-        const delayValue =
-          videoTrackData["source_delay"] || videoTrackData["delay"] || 0;
-        if (delayValue) {
-          delay = Number(delayValue);
-        }
+      // check if file is MP4/M4V - show import dialog
+      const ext = $videoTrack.filePath.toLowerCase();
+      if (ext.endsWith(".mp4") || ext.endsWith(".m4v")) {
+        showTrackImportDialog(data.mediainfo);
       }
     } catch (e) {
-      console.error("Failed to parse MediaInfo:", e);
+      error = e instanceof Error ? e.message : "Unknown error occurred";
     }
   }
 
-  function handleFileSelect(_filePath: string) {
-    ApiClient.logToBackend(
-      `Video file selected: ${videoFilePath}`,
-      LogLevel.DEBUG
+  function showTrackImportDialog(jsonString: string) {
+    try {
+      const parsed = JSON.parse(jsonString);
+      const tracks: Track[] = [];
+
+      // extract all tracks from MediaInfo
+      for (const track of parsed.tracks || []) {
+        const trackType = track["track_type"];
+
+        const trackIdFromMediaInfo = track["track_id"];
+
+        if (trackType === "Video") {
+          tracks.push({
+            type: "Video",
+            id: String(trackIdFromMediaInfo),
+            format: `${track["format"] || "Unknown"} (${track["width"] || 0}x${track["height"] || 0})`,
+            language: track["language"]?.toUpperCase(),
+            flags: undefined,
+            title: track["title"],
+            selected: true, // video always selected
+            data: track,
+          });
+        } else if (trackType === "Audio") {
+          tracks.push({
+            type: "Audio",
+            id: String(trackIdFromMediaInfo),
+            format: `${track["format"] || "Unknown"} (${track["channel_s"] || track["channels"] || "?"}ch)`,
+            language: track["language"]?.toUpperCase(),
+            flags: track["default"] === "Yes" ? "Default" : undefined,
+            title: track["title"],
+            selected: true,
+            data: track,
+          });
+        } else if (trackType === "Text") {
+          const isForced = track["forced"] === "Yes";
+          tracks.push({
+            type: "Subtitle",
+            id: String(trackIdFromMediaInfo),
+            format: track["format"] || "Timed Text",
+            language: track["language"]?.toUpperCase(),
+            flags: isForced ? "Forced" : undefined,
+            title: track["title"],
+            selected: true,
+            data: track,
+          });
+        } else if (trackType === "Menu") {
+          tracks.push({
+            type: "Chapters",
+            id: "-",
+            format: "Numbered (01 - ...)",
+            language: undefined,
+            flags: undefined,
+            title: undefined,
+            selected: true,
+            data: track,
+          });
+        }
+      }
+
+      importTracks = tracks;
+      importFilename =
+        $videoTrack.filePath.split(/[/\\]/).pop() || $videoTrack.filePath;
+      showImportDialog = true;
+    } catch (e) {
+      console.error("Failed to parse tracks for import:", e);
+    }
+  }
+
+  function handleImportConfirm(selectedTracks: Track[]) {
+    const audioToImport = selectedTracks.filter(
+      (t) => t.type === "Audio" && t.selected
     );
+    const subtitlesToImport = selectedTracks.filter(
+      (t) => t.type === "Subtitle" && t.selected
+    );
+
+    // reset existing tracks first (new video file = fresh start)
+    audioTracks.set([]);
+    subtitleTracks.set([]);
+
+    // add audio tracks
+    if (audioToImport.length > 0) {
+      const newTracks = audioToImport.map((track, idx) => ({
+        id: `audio-${Date.now()}-${idx}`,
+        filePath: $videoTrack.filePath,
+        language: track.language?.toLowerCase() || "",
+        title: track.title || "",
+        delay: 0,
+        isDefault: idx === 0,
+        trackId: parseInt(track.id), // track ID from MediaInfo
+        mediaInfo: $videoTrack.mediaInfo,
+        mediaInfoData: track.data,
+      }));
+      audioTracks.set(newTracks);
+    }
+
+    // add subtitle tracks
+    if (subtitlesToImport.length > 0) {
+      const newTracks = subtitlesToImport.map((track, idx) => ({
+        id: `subtitle-${Date.now()}-${idx}`,
+        filePath: $videoTrack.filePath,
+        language: track.language?.toLowerCase() || "",
+        title: track.title || "",
+        isDefault: idx === 0,
+        isForced: track.flags === "Forced",
+        trackId: parseInt(track.id), // track ID from MediaInfo
+        mediaInfo: $videoTrack.mediaInfo,
+        mediaInfoData: track.data,
+      }));
+      subtitleTracks.set(newTracks);
+    }
+  }
+
+  function handleFileSelect(filePath: string) {
+    videoTrack.update((t) => ({ ...t, filePath }));
+    ApiClient.logToBackend(`Video file selected: ${filePath}`, LogLevel.DEBUG);
     // auto load MediaInfo on file select
     loadMediaInfo();
   }
@@ -172,7 +290,7 @@
 <div class="tab-container">
   <div class="form-group">
     <FileInput
-      bind:value={videoFilePath}
+      bind:value={$videoTrack.filePath}
       onFileSelect={handleFileSelect}
       fileFilter={isVideoFile}
       label="Video File"
@@ -185,7 +303,7 @@
 
   <div class="form-group">
     <LanguageSelect
-      bind:value={language}
+      bind:value={$videoTrack.language}
       id="video-language"
       label="Language"
     />
@@ -196,14 +314,14 @@
     <input
       id="video-title"
       type="text"
-      bind:value={title}
+      bind:value={$videoTrack.title}
       placeholder="Enter title..."
     />
   </div>
 
   <div class="form-group">
     <label for="video-delay">Delay (ms)</label>
-    <input id="video-delay" type="number" bind:value={delay} />
+    <input id="video-delay" type="number" bind:value={$videoTrack.delay} />
   </div>
 
   {#if mediaInfoRows.length > 0}
@@ -230,6 +348,14 @@
     </div>
   {/if}
 </div>
+
+<!-- track import dialog -->
+<TrackImportDialog
+  bind:isOpen={showImportDialog}
+  filename={importFilename}
+  tracks={importTracks}
+  onConfirm={handleImportConfirm}
+/>
 
 <style>
   .error-message {
