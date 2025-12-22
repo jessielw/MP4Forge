@@ -4,6 +4,7 @@
     audioPresetTitles,
     subtitlePresetTitles,
   } from "$lib/stores/settings";
+  import { toast } from "$lib/stores/toast";
   import PresetTitleEditor from "./PresetTitleEditor.svelte";
 
   let audioTitles = $state([...$audioPresetTitles]);
@@ -12,7 +13,7 @@
   function saveSettings() {
     audioPresetTitles.set(audioTitles);
     subtitlePresetTitles.set(subtitleTitles);
-    alert("Settings saved successfully!");
+    toast.success("Settings saved successfully!");
   }
 </script>
 

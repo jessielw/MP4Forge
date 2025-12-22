@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { toast } from "$lib/stores/toast";
+
   interface Props {
     titles: string[];
     onTitlesChange: (titles: string[]) => void;
@@ -16,7 +18,7 @@
 
     // check for duplicates
     if (titles.includes(trimmed)) {
-      alert(`Title "${trimmed}" already exists.`);
+      toast.warning(`Title "${trimmed}" already exists.`);
       return;
     }
 
@@ -40,7 +42,7 @@
 
     // check for duplicates (excluding current)
     if (titles.some((t, i) => i !== editingIndex && t === trimmed)) {
-      alert(`Title "${trimmed}" already exists.`);
+      toast.warning(`Title "${trimmed}" already exists.`);
       return;
     }
 

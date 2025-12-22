@@ -9,6 +9,7 @@
   } from "$lib/stores/tracks";
   import { audioPresetTitles } from "$lib/stores/settings";
   import { currentTab } from "$lib/stores/navigation";
+  import { toast } from "$lib/stores/toast";
 
   let activeTrackId = $state("");
   let contextMenuVisible = $state(false);
@@ -155,11 +156,12 @@
 
     const title = activeTrack.title.trim();
     if ($audioPresetTitles.includes(title)) {
-      alert(`Title "${title}" already exists in presets.`);
+      toast.warning(`Title "${title}" already exists in presets.`);
       return;
     }
 
     audioPresetTitles.update((presets) => [...presets, title]);
+    toast.success(`Added "${title}" to presets`);
     hideContextMenu();
   }
 
@@ -168,6 +170,7 @@
 
     const title = activeTrack.title.trim();
     audioPresetTitles.update((presets) => presets.filter((p) => p !== title));
+    toast.info(`Removed "${title}" from presets`);
     hideContextMenu();
   }
 
