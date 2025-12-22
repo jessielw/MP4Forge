@@ -3,6 +3,7 @@
   import "@fontsource/fira-mono";
   import "../app.css";
   import { theme } from "$lib/stores/settings";
+  import Toast from "$lib/components/Toast.svelte";
   import type { Snippet } from "svelte";
 
   let { children }: { children: Snippet } = $props();
@@ -15,3 +16,4 @@
 </script>
 
 {@render children()}
+<Toast />
