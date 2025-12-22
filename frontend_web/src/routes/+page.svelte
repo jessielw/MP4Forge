@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { onMount } from "svelte";
   import VideoTab from "$lib/components/VideoTab.svelte";
   import AudioTab from "$lib/components/AudioTab.svelte";
   import SubtitlesTab from "$lib/components/SubtitlesTab.svelte";
@@ -7,6 +8,7 @@
   import SettingsTab from "$lib/components/SettingsTab.svelte";
   import Navigation from "$lib/components/Navigation.svelte";
   import { currentTab } from "$lib/stores/navigation";
+  import { resetAllTracks } from "$lib/stores/tracks";
 
   const tabs = [
     { id: "video", component: VideoTab, icon: "🎬", label: "Video" },
@@ -23,6 +25,11 @@
   ];
 
   const activeTab = $derived(tabs.find((t) => t.id === $currentTab) || tabs[0]);
+
+  // reset all tracks on page load for clean slate
+  onMount(() => {
+    resetAllTracks();
+  });
 </script>
 
 <div class="app-container">
