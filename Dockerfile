@@ -25,6 +25,7 @@ FROM gpac/ubuntu:latest
 RUN apt-get update && apt-get install -y \
     python3.12 \
     python3-pip \
+    python3.12-venv \
     curl \
     && rm -rf /var/lib/apt/lists/* \
     && ln -s /usr/bin/python3.12 /usr/bin/python
@@ -35,6 +36,12 @@ RUN MP4Box -version
 # Set working directory
 WORKDIR /app
 
+# Create virtual environment
+RUN python -m venv /opt/venv
+
+# Add venv to PATH so we use it by default
+ENV PATH="/opt/venv/bin:$PATH"
+
 # Copy Python project files
 COPY pyproject.toml ./
 COPY README.md ./
@@ -44,7 +51,7 @@ COPY LICENSE ./
 COPY backend/ ./backend/
 COPY core/ ./core/
 
-# Install Python dependencies
+# Install Python dependencies into venv
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -e ".[core]" && \
     pip install --no-cache-dir fastapi uvicorn[standard] python-multipart websockets
