@@ -29,19 +29,6 @@
     </select>
   </div>
 
-  <div class="form-group">
-    <label for="mp4box-path">Mp4Box Path</label>
-    <div class="input-group">
-      <input
-        id="mp4box-path"
-        type="text"
-        readonly
-        value="/usr/local/bin/mp4box"
-      />
-      <button class="browse-button">📁 Browse</button>
-    </div>
-  </div>
-
   <hr />
 
   <div class="form-group">
@@ -97,12 +84,6 @@
     font-style: italic;
   }
 
-  .input-group {
-    display: flex;
-    gap: 0.5rem;
-  }
-
-  input,
   select {
     width: 100%;
     padding: 0.5rem;
@@ -112,11 +93,6 @@
     color: var(--text-primary);
   }
 
-  .input-group input {
-    flex: 1;
-  }
-
-  .browse-button,
   .primary-button {
     padding: 0.5rem 1rem;
     border: none;
@@ -124,12 +100,6 @@
     font-weight: 500;
     cursor: pointer;
     transition: all 0.2s;
-  }
-
-  .browse-button {
-    background-color: var(--bg-secondary);
-    color: var(--text-primary);
-    border: 1px solid var(--border-color);
   }
 
   .primary-button {
