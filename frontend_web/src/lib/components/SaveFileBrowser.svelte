@@ -284,7 +284,7 @@
   .save-file-browser {
     display: flex;
     flex-direction: column;
-    height: 600px;
+    flex: 1;
     background-color: var(--bg-primary);
     border-radius: 8px;
     overflow: hidden;

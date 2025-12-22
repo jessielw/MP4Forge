@@ -173,7 +173,7 @@
     overflow: hidden;
     display: flex;
     flex-direction: column;
-    height: 400px;
+    flex: 1;
   }
 
   .header {
