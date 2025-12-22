@@ -40,7 +40,7 @@
     class="browse-button"
     type="button"
   >
-    Browse
+    📁 Browse
   </button>
 </div>
 
