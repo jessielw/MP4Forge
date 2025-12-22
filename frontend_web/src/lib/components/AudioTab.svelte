@@ -80,7 +80,7 @@
       language: "",
       title: "",
       delay: 0,
-      isDefault: $audioTracks.length === 0, // first track is default
+      isDefault: false,
     };
 
     audioTracks.update((t) => [...t, newTrack]);
