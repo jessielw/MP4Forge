@@ -23,7 +23,7 @@
 		<label for="mp4box-path">Mp4Box Path</label>
 		<div class="input-group">
 			<input id="mp4box-path" type="text" readonly value="/usr/local/bin/mp4box" />
-			<button class="browse-button">Browse</button>
+			<button class="browse-button">📁 Browse</button>
 		</div>
 	</div>
 
