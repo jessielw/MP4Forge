@@ -18,25 +18,18 @@ COPY frontend_web/ ./
 # Build the frontend
 RUN npm run build
 
-# Stage 2: Python runtime with backend
-FROM python:3.12-slim
+# Stage 2: Python runtime with backend - based on GPAC's official image
+FROM gpac/ubuntu:latest
 
-# Install system dependencies
+# Install Python and pip
 RUN apt-get update && apt-get install -y \
-    wget \
+    python3.12 \
+    python3-pip \
     curl \
-    ca-certificates \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* \
+    && ln -s /usr/bin/python3.12 /usr/bin/python
 
-# Download and install GPAC (mp4box) from official build server
-# Always uses the latest build
-RUN wget -q https://download.tsi.telecom-paristech.fr/gpac/new_builds/gpac_latest_head_linux64.deb && \
-    apt-get update && \
-    apt-get install -y ./gpac_latest_head_linux64.deb && \
-    rm gpac_latest_head_linux64.deb && \
-    rm -rf /var/lib/apt/lists/*
-
-# Verify mp4box is available
+# Verify mp4box is available (should be pre-installed in gpac/ubuntu image)
 RUN MP4Box -version
 
 # Set working directory
