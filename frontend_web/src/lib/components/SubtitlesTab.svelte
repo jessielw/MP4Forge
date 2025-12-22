@@ -7,8 +7,13 @@
     setDefaultSubtitleTrack,
     type SubtitleTrack,
   } from "$lib/stores/tracks";
+  import { subtitlePresetTitles } from "$lib/stores/settings";
+  import { currentTab } from "$lib/stores/navigation";
 
   let activeTrackId = $state("");
+  let contextMenuVisible = $state(false);
+  let contextMenuX = $state(0);
+  let contextMenuY = $state(0);
 
   // use store directly - no local copy to avoid loops
   const tracks = $derived($subtitleTracks);
@@ -126,6 +131,62 @@
     }
   }
 
+  function showContextMenu(e: MouseEvent) {
+    e.preventDefault();
+    contextMenuX = e.clientX;
+    contextMenuY = e.clientY;
+    contextMenuVisible = true;
+  }
+
+  function hideContextMenu() {
+    contextMenuVisible = false;
+  }
+
+  function addTitleToPresets() {
+    if (!activeTrack?.title.trim()) return;
+
+    const title = activeTrack.title.trim();
+    if ($subtitlePresetTitles.includes(title)) {
+      alert(`Title "${title}" already exists in presets.`);
+      return;
+    }
+
+    subtitlePresetTitles.update((presets) => [...presets, title]);
+    hideContextMenu();
+  }
+
+  function removeTitleFromPresets() {
+    if (!activeTrack?.title.trim()) return;
+
+    const title = activeTrack.title.trim();
+    subtitlePresetTitles.update((presets) =>
+      presets.filter((p) => p !== title)
+    );
+    hideContextMenu();
+  }
+
+  function managePresets() {
+    currentTab.set("settings");
+    hideContextMenu();
+  }
+
+  const isTitleInPresets = $derived(
+    activeTrack?.title.trim()
+      ? $subtitlePresetTitles.includes(activeTrack.title.trim())
+      : false
+  );
+
+  const hasTitleValue = $derived(!!activeTrack?.title.trim());
+
+  // close context menu on click outside
+  $effect(() => {
+    if (contextMenuVisible) {
+      const handleClick = () => hideContextMenu();
+      document.addEventListener("click", handleClick);
+      return () => document.removeEventListener("click", handleClick);
+    }
+  });
+
   async function loadMediaInfo() {
     if (!activeTrack?.filePath || loading) return;
 
@@ -232,6 +293,7 @@
               type="text"
               value={activeTrack.title}
               oninput={(e) => updateTrack({ title: e.currentTarget.value })}
+              oncontextmenu={showContextMenu}
               placeholder="Enter title..."
             />
           </div>
@@ -285,6 +347,32 @@
     </MultiTrackWidget>
   {/if}
 </div>
+
+{#if contextMenuVisible}
+  <div
+    class="preset-context-menu"
+    style="left: {contextMenuX}px; top: {contextMenuY}px;"
+  >
+    {#if hasTitleValue}
+      {#if isTitleInPresets}
+        <button
+          class="preset-context-menu-item"
+          onclick={removeTitleFromPresets}
+        >
+          Remove from Presets
+        </button>
+      {:else}
+        <button class="preset-context-menu-item" onclick={addTitleToPresets}>
+          Save to Presets
+        </button>
+      {/if}
+      <hr />
+    {/if}
+    <button class="preset-context-menu-item" onclick={managePresets}>
+      Manage Presets...
+    </button>
+  </div>
+{/if}
 
 <style>
   .tab-container {
