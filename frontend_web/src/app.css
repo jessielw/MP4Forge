@@ -1,50 +1,87 @@
 :root {
-	--bg-primary: #ffffff;
-	--bg-secondary: #f5f5f5;
-	--text-primary: #000000;
-	--text-secondary: #666666;
-	--border-color: #cccccc;
-	--accent-color: #0066cc;
-	--accent-hover: #0052a3;
+  --bg-primary: #ffffff;
+  --bg-secondary: #f5f5f5;
+  --text-primary: #000000;
+  --text-secondary: #666666;
+  --border-color: #cccccc;
+  --accent-color: #0066cc;
+  --accent-hover: #0052a3;
 }
 
-:root[data-theme='dark'] {
-	--bg-primary: #1e1e1e;
-	--bg-secondary: #2d2d2d;
-	--text-primary: #ffffff;
-	--text-secondary: #cccccc;
-	--border-color: #444444;
-	--accent-color: #4d9eff;
-	--accent-hover: #3d8eef;
+:root[data-theme="dark"] {
+  --bg-primary: #1e1e1e;
+  --bg-secondary: #2d2d2d;
+  --text-primary: #ffffff;
+  --text-secondary: #cccccc;
+  --border-color: #444444;
+  --accent-color: #4d9eff;
+  --accent-hover: #3d8eef;
 }
 
 * {
-	box-sizing: border-box;
-	margin: 0;
-	padding: 0;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
 }
 
 body {
-	width: 100vw;
-	height: 100vh;
-	height: 100svh;
-	height: 100dvh;
-	font-family: "Open Sans", sans-serif;
-	background-color: var(--bg-primary);
-	color: var(--text-primary);
+  width: 100vw;
+  height: 100vh;
+  height: 100svh;
+  height: 100dvh;
+  font-family: "Open Sans", sans-serif;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
 }
 
-code, pre, kbd, samp, tt, .fixed-font {
-    font-family: 'Fira Mono', "Courier New", Courier, monospace;
+code,
+pre,
+kbd,
+samp,
+tt,
+.fixed-font {
+  font-family: "Fira Mono", "Courier New", Courier, monospace;
 }
 
 button {
-	cursor: pointer;
-	font-family: inherit;
+  cursor: pointer;
+  font-family: inherit;
 }
 
 input,
 select,
 textarea {
-	font-family: inherit;
+  font-family: inherit;
+}
+
+.preset-context-menu {
+  position: fixed;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+  z-index: 1000;
+  min-width: 180px;
+  padding: 0.25rem 0;
+}
+
+.preset-context-menu-item {
+  width: 100%;
+  padding: 0.5rem 1rem;
+  text-align: left;
+  background: none;
+  border: none;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.preset-context-menu-item:hover {
+  background: var(--bg-hover);
+}
+
+.preset-context-menu hr {
+  margin: 0.25rem 0;
+  border: none;
+  border-top: 1px solid var(--border-color);
 }
