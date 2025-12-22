@@ -6,6 +6,9 @@ from pathlib import Path
 from uuid import UUID
 
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 from iso639 import Language as Iso639Language
 
 from backend.schemas import (
@@ -62,6 +65,13 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(lifespan=lifespan)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 class WebSocketCallback(ProgressCallback):
@@ -562,3 +572,33 @@ async def remove_job(job_id: str):
         raise HTTPException(status_code=400, detail="Invalid job ID")
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/health")
+async def health_check():
+    """Health check endpoint for Docker."""
+    return {"status": "healthy", "service": "mp4forge-api"}
+
+
+# serve frontend static files (for production Docker deployment)
+frontend_build_path = Path(__file__).parent.parent / "frontend_web" / "build"
+if frontend_build_path.exists():
+    # mount static assets
+    app.mount(
+        "/assets", StaticFiles(directory=frontend_build_path / "assets"), name="assets"
+    )
+    app.mount("/_app", StaticFiles(directory=frontend_build_path / "_app"), name="app")
+
+    # serve index.html for all other routes (SPA routing)
+    @app.get("/{full_path:path}")
+    async def serve_frontend(full_path: str):
+        """Serve the frontend application."""
+        # if it's an API route, let FastAPI handle it
+        if full_path.startswith("api/"):
+            raise HTTPException(status_code=404, detail="API route not found")
+
+        # otherwise serve the index.html
+        index_file = frontend_build_path / "index.html"
+        if index_file.exists():
+            return FileResponse(index_file)
+        raise HTTPException(status_code=404, detail="Frontend not found")
