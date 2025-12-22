@@ -1,15 +1,26 @@
-import { writable } from 'svelte/store';
-import { browser } from '$app/environment';
+import { writable } from "svelte/store";
+import { browser } from "$app/environment";
 
-const storedTheme = browser ? localStorage.getItem('theme') || 'auto' : 'auto';
+const storedTheme = browser ? localStorage.getItem("theme") || "auto" : "auto";
+const storedResetTabsOnAdd = browser
+  ? localStorage.getItem("resetTabsOnAdd") === "true"
+  : true;
 
 export const theme = writable<string>(storedTheme);
+export const resetTabsOnAdd = writable<boolean>(storedResetTabsOnAdd);
 
-// Persist theme changes
+// persist theme changes
 theme.subscribe((value) => {
-	if (browser) {
-		localStorage.setItem('theme', value);
-	}
+  if (browser) {
+    localStorage.setItem("theme", value);
+  }
+});
+
+// persist resetTabsOnAdd setting
+resetTabsOnAdd.subscribe((value) => {
+  if (browser) {
+    localStorage.setItem("resetTabsOnAdd", String(value));
+  }
 });
 
 export const audioPresetTitles = writable<string[]>([]);
