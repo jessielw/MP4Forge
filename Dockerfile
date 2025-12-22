@@ -1,4 +1,5 @@
 # Multi-stage Dockerfile for MP4Forge Web Application
+# Architecture: linux/amd64 (x64) only
 
 # Stage 1: Build frontend
 FROM node:20-alpine AS frontend-builder
@@ -20,15 +21,23 @@ RUN npm run build
 # Stage 2: Python runtime with backend
 FROM python:3.12-slim
 
-# Install system dependencies including gpac (mp4box)
+# Install system dependencies
 RUN apt-get update && apt-get install -y \
-    gpac \
     wget \
     curl \
+    ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
+# Download and install GPAC (mp4box) from official build server
+# Always uses the latest build
+RUN wget -q https://download.tsi.telecom-paristech.fr/gpac/new_builds/gpac_latest_head_linux64.deb && \
+    apt-get update && \
+    apt-get install -y ./gpac_latest_head_linux64.deb && \
+    rm gpac_latest_head_linux64.deb && \
+    rm -rf /var/lib/apt/lists/*
+
 # Verify mp4box is available
-RUN mp4box -version
+RUN MP4Box -version
 
 # Set working directory
 WORKDIR /app
