@@ -20,6 +20,7 @@
     chaptersText,
   } from "$lib/stores/tracks";
   import { resetTabsOnAdd } from "$lib/stores/settings";
+  import { toast } from "$lib/stores/toast";
   import SaveFileBrowserModal from "./SaveFileBrowserModal.svelte";
 
   let outputPath = $state("");
@@ -87,13 +88,13 @@
 
   async function handleAddToQueue() {
     if (!outputPath.trim()) {
-      alert("Please select an output file");
+      toast.warning("Please select an output file");
       return;
     }
 
     // validate video file is present
     if (!$videoTrack.filePath.trim()) {
-      alert("Video file is required");
+      toast.warning("Video file is required");
       return;
     }
 
@@ -140,7 +141,7 @@
         outputPath = "";
       }
     } catch (error) {
-      alert(`Failed to add job: ${error}`);
+      toast.error(`Failed to add job: ${error}`);
     }
   }
 
@@ -152,7 +153,7 @@
         cancelConfirmIds.delete(jobId);
         cancelConfirmIds = new Set(cancelConfirmIds);
       } catch (error) {
-        alert(`Failed to cancel job: ${error}`);
+        toast.error(`Failed to cancel job: ${error}`);
       }
     } else {
       // first click - show confirmation
@@ -172,7 +173,7 @@
     try {
       await removeJob(jobId);
     } catch (error) {
-      alert(`Failed to remove job: ${error}`);
+      toast.error(`Failed to remove job: ${error}`);
     }
   }
 
@@ -185,7 +186,7 @@
         // check if there are queued jobs
         const pendingJobs = $jobs.filter((j) => j.status === "pending");
         if (pendingJobs.length === 0) {
-          alert("No pending jobs to process");
+          toast.info("No pending jobs to process");
           return;
         }
 
@@ -193,7 +194,9 @@
         queueRunning = true;
       }
     } catch (error) {
-      alert(`Failed to ${queueRunning ? "stop" : "start"} queue: ${error}`);
+      toast.error(
+        `Failed to ${queueRunning ? "stop" : "start"} queue: ${error}`
+      );
     }
   }
 
@@ -235,27 +238,30 @@
   </div>
 
   <div class="controls-section">
-    <div class="checkbox-group">
-      <label>
-        <input type="checkbox" bind:checked={$resetTabsOnAdd} />
-        Reset Tabs on Add
-      </label>
-    </div>
-
     <div class="button-row">
-      <button class="primary-button" onclick={handleAddToQueue}>
-        Add to Queue
-      </button>
-      <button class="secondary-button" onclick={clearCompletedJobs}>
-        Clear Completed
-      </button>
-      <button
-        class="queue-button"
-        class:running={queueRunning}
-        onclick={handleToggleQueue}
-      >
-        {queueRunning ? "⏸️ Stop Queue" : "▶️ Start Queue"}
-      </button>
+      <div class="vertical-flex">
+        <div class="checkbox-group">
+          <label>
+            <input type="checkbox" bind:checked={$resetTabsOnAdd} />
+            Reset Tabs on Add
+          </label>
+        </div>
+        <button class="primary-button" onclick={handleAddToQueue}>
+          Add to Queue
+        </button>
+      </div>
+      <div class="vertical-flex">
+        <button class="secondary-button" onclick={clearCompletedJobs}>
+          Clear Completed
+        </button>
+        <button
+          class="queue-button"
+          class:running={queueRunning}
+          onclick={handleToggleQueue}
+        >
+          {queueRunning ? "⏸️ Stop Queue" : "▶️ Start Queue"}
+        </button>
+      </div>
     </div>
   </div>
 
@@ -294,7 +300,8 @@
                   {#if job.error}
                     <button
                       class="details-button"
-                      onclick={() => alert(job.error)}
+                      onclick={() =>
+                        toast.error(job.error || "Unknown error", 5000)}
                     >
                       View Details
                     </button>
@@ -473,10 +480,6 @@
     margin-bottom: 1.5rem;
   }
 
-  .checkbox-group {
-    margin-bottom: 1rem;
-  }
-
   .checkbox-group label {
     display: flex;
     align-items: center;
@@ -486,7 +489,7 @@
 
   .button-row {
     display: flex;
-    gap: 0.5rem;
+    justify-content: space-between;
   }
 
   .queue-section {
@@ -659,5 +662,11 @@
     height: 100%;
     background-color: #4caf50;
     transition: width 0.3s ease;
+  }
+
+  .vertical-flex {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
   }
 </style>
