@@ -75,7 +75,7 @@
       filePath: "",
       language: "",
       title: "",
-      isDefault: $subtitleTracks.length === 0, // first track is default
+      isDefault: false,
       isForced: false,
     };
 
