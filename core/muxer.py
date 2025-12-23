@@ -7,6 +7,7 @@ from uuid import UUID
 
 import psutil
 
+from core.config import Conf
 from core.enums.job_status import JobStatus
 from core.logger import LOG
 from core.payloads.mux_job import MuxJob
@@ -147,7 +148,7 @@ class VideoMuxer:
                 return
 
             # build MP4Box command
-            cmd = ["mp4box"]
+            cmd = [Conf.mp4box_path]
 
             # add video track
             if job.video:
