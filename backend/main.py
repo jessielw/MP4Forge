@@ -130,7 +130,7 @@ async def browse_dir(request: BrowseRequest):
                 target_path = data_dir
             else:
                 target_path = Path.home()
-        
+
         result = browse_directory(target_path)
         LOG.debug(f"Browse result: {result['current_path']}")
         return result
@@ -588,34 +588,6 @@ async def health_check():
 # serve frontend static files (for production Docker deployment)
 frontend_build_path = Path(__file__).parent.parent / "frontend_web" / "build"
 if frontend_build_path.exists():
-    # mount _app directory if it exists (SvelteKit internal files)
-    app_dir = frontend_build_path / "_app"
-    if app_dir.exists():
-        app.mount("/_app", StaticFiles(directory=app_dir), name="app")
-
-    # mount other static directories that might exist
-    for static_dir in ["assets", "static"]:
-        static_path = frontend_build_path / static_dir
-        if static_path.exists() and static_path.is_dir():
-            app.mount(
-                f"/{static_dir}", StaticFiles(directory=static_path), name=static_dir
-            )
-
-    # serve index.html for all other routes (SPA routing)
-    @app.get("/{full_path:path}")
-    async def serve_frontend(full_path: str):
-        """Serve the frontend application."""
-        # if it's an API route, let FastAPI handle it
-        if full_path.startswith("api/"):
-            raise HTTPException(status_code=404, detail="API route not found")
-
-        # check if it's a specific file request
-        file_path = frontend_build_path / full_path
-        if file_path.is_file():
-            return FileResponse(file_path)
-
-        # otherwise serve the index.html (SPA routing)
-        index_file = frontend_build_path / "index.html"
-        if index_file.exists():
-            return FileResponse(index_file)
-        raise HTTPException(status_code=404, detail="Frontend not found")
+    app.mount(
+        "/", StaticFiles(directory=frontend_build_path, html=True), name="frontend"
+    )
