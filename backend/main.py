@@ -18,7 +18,10 @@ from backend.schemas import (
     LogRequest,
     MediaInfoRequest,
     ReadFileRequest,
+    SettingsResponse,
+    SettingsUpdate,
 )
+from core.config import Conf
 from core.enums.job_status import JobStatus
 from core.job_states import AudioState, ChapterState, SubtitleState, VideoState
 from core.logger import LOG, LogLevel
@@ -583,6 +586,38 @@ async def remove_job(job_id: str):
 async def health_check():
     """Health check endpoint for Docker."""
     return {"status": "healthy", "service": "mp4forge-api"}
+
+
+@app.get("/api/settings", response_model=SettingsResponse)
+async def get_settings():
+    """Get current settings from config."""
+    return SettingsResponse(
+        theme=Conf.theme,
+        log_level=str(Conf.log_level),
+        audio_preset_titles=Conf.audio_preset_titles,
+        subtitle_preset_titles=Conf.subtitle_preset_titles,
+    )
+
+
+@app.post("/api/settings")
+async def update_settings(settings: SettingsUpdate):
+    """Update settings and save to config."""
+    if settings.theme is not None:
+        Conf.theme = settings.theme
+    if settings.log_level is not None:
+        try:
+            # convert string to LogLevel enum
+            log_level = LogLevel[settings.log_level.upper()]
+            Conf.log_level = log_level
+        except (KeyError, AttributeError):
+            raise HTTPException(status_code=400, detail="Invalid log level")
+    if settings.audio_preset_titles is not None:
+        Conf.audio_preset_titles = settings.audio_preset_titles
+    if settings.subtitle_preset_titles is not None:
+        Conf.subtitle_preset_titles = settings.subtitle_preset_titles
+    
+    Conf.save()
+    return {"status": "success", "message": "Settings saved successfully"}
 
 
 # serve frontend static files (for production Docker deployment)
