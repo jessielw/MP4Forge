@@ -33,3 +33,17 @@ class AddJobRequest(BaseModel):
     subtitle_tracks: list[dict] = []
     chapters: str | None = None
     output_file: str
+
+
+class SettingsResponse(BaseModel):
+    theme: str
+    log_level: str
+    audio_preset_titles: list[str]
+    subtitle_preset_titles: list[str]
+
+
+class SettingsUpdate(BaseModel):
+    theme: str | None = None
+    log_level: str | None = None
+    audio_preset_titles: list[str] | None = None
+    subtitle_preset_titles: list[str] | None = None
