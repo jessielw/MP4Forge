@@ -583,11 +583,18 @@ async def health_check():
 # serve frontend static files (for production Docker deployment)
 frontend_build_path = Path(__file__).parent.parent / "frontend_web" / "build"
 if frontend_build_path.exists():
-    # mount static assets
-    app.mount(
-        "/assets", StaticFiles(directory=frontend_build_path / "assets"), name="assets"
-    )
-    app.mount("/_app", StaticFiles(directory=frontend_build_path / "_app"), name="app")
+    # mount _app directory if it exists (SvelteKit internal files)
+    app_dir = frontend_build_path / "_app"
+    if app_dir.exists():
+        app.mount("/_app", StaticFiles(directory=app_dir), name="app")
+
+    # mount other static directories that might exist
+    for static_dir in ["assets", "static"]:
+        static_path = frontend_build_path / static_dir
+        if static_path.exists() and static_path.is_dir():
+            app.mount(
+                f"/{static_dir}", StaticFiles(directory=static_path), name=static_dir
+            )
 
     # serve index.html for all other routes (SPA routing)
     @app.get("/{full_path:path}")
@@ -597,7 +604,12 @@ if frontend_build_path.exists():
         if full_path.startswith("api/"):
             raise HTTPException(status_code=404, detail="API route not found")
 
-        # otherwise serve the index.html
+        # check if it's a specific file request
+        file_path = frontend_build_path / full_path
+        if file_path.is_file():
+            return FileResponse(file_path)
+
+        # otherwise serve the index.html (SPA routing)
         index_file = frontend_build_path / "index.html"
         if index_file.exists():
             return FileResponse(index_file)
