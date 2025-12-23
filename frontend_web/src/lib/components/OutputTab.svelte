@@ -7,7 +7,6 @@
     cancelJob,
     removeJob,
     loadJobs,
-    initializeWebSocket,
     startQueueProcessing,
     stopQueueProcessing,
     getQueueStatus,
@@ -30,7 +29,6 @@
 
   // initialize WebSocket and load jobs on mount
   onMount(() => {
-    initializeWebSocket();
     loadJobs();
     checkQueueStatus();
 

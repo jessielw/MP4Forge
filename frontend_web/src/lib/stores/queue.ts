@@ -32,13 +32,28 @@ export interface MuxJob {
 
 export const jobs = writable<MuxJob[]>([]);
 let ws: WebSocket | null = null;
+let reconnectTimeout: ReturnType<typeof setTimeout> | null = null;
+let isIntentionallyClosed = false;
 
 // initialize WebSocket connection
 export function initializeWebSocket() {
-  if (ws?.readyState === WebSocket.OPEN) return;
+  // prevent multiple simultaneous connections
+  if (
+    ws?.readyState === WebSocket.OPEN ||
+    ws?.readyState === WebSocket.CONNECTING
+  ) {
+    return;
+  }
 
+  // clear any pending reconnect
+  if (reconnectTimeout) {
+    clearTimeout(reconnectTimeout);
+    reconnectTimeout = null;
+  }
+
+  isIntentionallyClosed = false;
   const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-  const wsUrl = `${protocol}//${window.location.hostname}:8000/ws/jobs`;
+  const wsUrl = `${protocol}//${window.location.host}/ws/jobs`;
 
   ws = new WebSocket(wsUrl);
 
@@ -61,9 +76,25 @@ export function initializeWebSocket() {
 
   ws.onclose = () => {
     console.log("WebSocket disconnected");
-    // reconnect after 3 seconds
-    setTimeout(initializeWebSocket, 3000);
+    ws = null;
+
+    // only reconnect if not intentionally closed
+    if (!isIntentionallyClosed) {
+      reconnectTimeout = setTimeout(initializeWebSocket, 3000);
+    }
   };
+}
+
+export function closeWebSocket() {
+  isIntentionallyClosed = true;
+  if (reconnectTimeout) {
+    clearTimeout(reconnectTimeout);
+    reconnectTimeout = null;
+  }
+  if (ws) {
+    ws.close();
+    ws = null;
+  }
 }
 
 function handleWebSocketMessage(data: any) {
