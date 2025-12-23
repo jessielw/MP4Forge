@@ -135,7 +135,7 @@
     <textarea
       id="chapter-editor"
       bind:value={$chaptersText}
-      placeholder="CHAPTER01=00:00:00.000&#10;CHAPTER01NAME=Chapter 1&#10;CHAPTER02=00:05:00.000&#10;CHAPTER02NAME=Chapter 2"
+      placeholder="CHAPTER01=00:00:00.000..."
       rows="20"
       spellcheck="false"
     ></textarea>
