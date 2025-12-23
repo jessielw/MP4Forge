@@ -41,8 +41,6 @@
     </select>
   </div>
 
-  <hr />
-
   <div class="form-group">
     <label for="loglevel-select">Log Level</label>
     <select id="loglevel-select" bind:value={$logLevel}>
@@ -51,6 +49,8 @@
       {/each}
     </select>
   </div>
+
+  <hr />
 
   <div class="form-group">
     <div class="section-header">Audio Preset Titles</div>
