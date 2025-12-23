@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount } from "svelte";
+  import { toast } from "$lib/stores/toast";
 
   interface Props {
     onFileSelect: (filePath: string) => void;
@@ -33,7 +34,6 @@
   let parentPath = $state<string | null>(null);
   let items = $state<BrowseItem[]>([]);
   let loading = $state(false);
-  let error = $state("");
   let basePath = $state("");
 
   // load initial directory on mount
@@ -43,7 +43,6 @@
 
   async function browseDirectory(path?: string) {
     loading = true;
-    error = "";
 
     try {
       const response = await fetch("/api/browse", {
@@ -63,7 +62,9 @@
       items = data.items;
       basePath = data.base_path;
     } catch (e) {
-      error = e instanceof Error ? e.message : "Unknown error occurred";
+      const errorMsg =
+        e instanceof Error ? e.message : "Unknown error occurred";
+      toast.error(errorMsg);
     } finally {
       loading = false;
     }
@@ -123,9 +124,6 @@
       <button class="close-button" onclick={onClose} aria-label="Close">
         ✕
       </button>
-    {/if}
-    {#if error}
-      <div class="error-message">{error}</div>
     {/if}
   </div>
 
@@ -208,12 +206,6 @@
   .close-button:hover {
     background: var(--bg-hover);
     color: var(--text-primary);
-  }
-
-  .error-message {
-    color: var(--error-color, #ff4444);
-    margin-top: 8px;
-    font-size: 0.9em;
   }
 
   .current-path {

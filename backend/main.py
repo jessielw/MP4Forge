@@ -120,21 +120,26 @@ async def get_mediainfo(request: MediaInfoRequest):
 async def browse_dir(request: BrowseRequest):
     """Browse directory contents within allowed base path."""
     try:
-        # target_path = Path(request.path) if request.path else None
-        target_path = (
-            Path(request.path)
-            if request.path
-            else Path(r"C:\Users\jlw_4049\Desktop\sample\mp4testing")
-        )  # testing set this to None later
+        # default to /data in Docker, or user's home directory otherwise
+        if request.path:
+            target_path = Path(request.path)
+        else:
+            # check if we're in Docker (/data exists)
+            data_dir = Path("/data")
+            if data_dir.exists():
+                target_path = data_dir
+            else:
+                target_path = Path.home()
+        
         result = browse_directory(target_path)
         LOG.debug(f"Browse result: {result['current_path']}")
         return result
     except PermissionError as e:
-        raise HTTPException(status_code=403, detail=str(e))
+        raise HTTPException(status_code=403, detail=f"Permission denied: {str(e)}")
     except FileNotFoundError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+        raise HTTPException(status_code=404, detail=f"Path not found: {str(e)}")
     except NotADirectoryError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=f"Not a directory: {str(e)}")
     except Exception as e:
         raise HTTPException(
             status_code=500, detail=f"Error browsing directory: {str(e)}"
