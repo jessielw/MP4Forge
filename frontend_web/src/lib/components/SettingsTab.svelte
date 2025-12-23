@@ -1,19 +1,31 @@
 <script lang="ts">
   import {
     theme,
+    logLevel,
     audioPresetTitles,
     subtitlePresetTitles,
+    saveSettingsToBackend,
   } from "$lib/stores/settings";
   import { toast } from "$lib/stores/toast";
   import PresetTitleEditor from "./PresetTitleEditor.svelte";
+  import { LogLevel } from "$lib/api";
+  import { titleCase } from "title-case";
 
   let audioTitles = $state([...$audioPresetTitles]);
   let subtitleTitles = $state([...$subtitlePresetTitles]);
 
-  function saveSettings() {
+  async function saveSettings() {
+    // update stores
     audioPresetTitles.set(audioTitles);
     subtitlePresetTitles.set(subtitleTitles);
-    toast.success("Settings saved successfully!");
+
+    // save to backend
+    try {
+      await saveSettingsToBackend();
+      toast.success("Settings saved successfully!");
+    } catch (err) {
+      toast.error("Failed to save settings: " + (err as Error).message);
+    }
   }
 </script>
 
@@ -30,6 +42,15 @@
   </div>
 
   <hr />
+
+  <div class="form-group">
+    <label for="loglevel-select">Log Level</label>
+    <select id="loglevel-select" bind:value={$logLevel}>
+      {#each Object.entries(LogLevel).filter( ([k, v]) => isNaN(Number(k)) ) as [name, value]}
+        <option {value}>{titleCase(name.toLowerCase())}</option>
+      {/each}
+    </select>
+  </div>
 
   <div class="form-group">
     <div class="section-header">Audio Preset Titles</div>
