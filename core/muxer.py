@@ -7,6 +7,7 @@ from uuid import UUID
 
 import psutil
 
+from core.config import Conf
 from core.enums.job_status import JobStatus
 from core.logger import LOG
 from core.payloads.mux_job import MuxJob
@@ -139,6 +140,19 @@ class VideoMuxer:
         process = None
 
         try:
+            # validate MP4Box exists before starting
+            mp4box_path = Conf.mp4box_path
+            if not mp4box_path:
+                error_msg = (
+                    f"MP4Box not found at '{mp4box_path}'. Please install "
+                    "MP4Box or update the path in settings."
+                )
+                self.queue_manager.update_job_status(
+                    job.job_id, JobStatus.FAILED, error_msg
+                )
+                self._notify_error(error_msg)
+                return
+
             self.queue_manager.update_job_status(job.job_id, JobStatus.PROCESSING)
 
             # check if job was cancelled before starting
@@ -147,7 +161,7 @@ class VideoMuxer:
                 return
 
             # build MP4Box command
-            cmd = ["mp4box"]
+            cmd = [Conf.mp4box_path]
 
             # add video track
             if job.video:
@@ -344,6 +358,8 @@ class VideoMuxer:
             if return_code == 0:
                 self.queue_manager.update_job_status(job.job_id, JobStatus.COMPLETED)
                 self.queue_manager.update_job_progress(job.job_id, 100.0, "Completed")
+                LOG.debug(f"Mux completed successfully: {job.output_file}")
+                LOG.debug(f"Output file exists: {job.output_file.exists()}")
                 self._notify_complete(str(job.output_file))
             else:
                 # capture detailed error from all output

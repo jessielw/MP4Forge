@@ -127,7 +127,7 @@ class Config:
 
         # if empty or doesn't exist, try to auto-detect
         if not stored_path or not Path(stored_path).exists():
-            detected = shutil.which("mp4box")
+            detected = shutil.which("mp4box") or shutil.which("MP4Box")
             if detected:
                 # cache the detected path
                 self.set("general", "mp4box_path", detected)
