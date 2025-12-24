@@ -4,6 +4,11 @@ on:
   release:
     types: [published]
   workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to tag (e.g. 2.0.1)"
+        required: false
+        default: ""
 
 env:
   REGISTRY: ghcr.io
@@ -36,9 +41,9 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=semver,pattern={{major}}
+            ${{ github.event_name == 'workflow_dispatch' && inputs.version != '' && format('type=semver,pattern={{version}},value={0}', inputs.version) || 'type=semver,pattern={{version}}' }}
+            ${{ github.event_name == 'workflow_dispatch' && inputs.version != '' && format('type=semver,pattern={{major}}.{{minor}},value={0}', inputs.version) || 'type=semver,pattern={{major}}.{{minor}}' }}
+            ${{ github.event_name == 'workflow_dispatch' && inputs.version != '' && format('type=semver,pattern={{major}},value={0}', inputs.version) || 'type=semver,pattern={{major}}' }}
             type=raw,value=latest
           flavor: |
             latest=auto
