@@ -68,22 +68,31 @@ uv run python frontend_desktop/main.py
 
 ### Option 3: Docker (Web Interface)
 
-**WIP**
-
 Run MP4Forge with a web interface using Docker:
 
-```bash
-# Using docker-compose (recommended)
-docker-compose up -d
+_Compose Example:_
 
-# Or using the convenience script
-./docker-run.sh  # Linux/macOS
-docker-run.bat   # Windows
-
-# Access the web interface at http://localhost:8000
+```yaml
+services:
+  mp4forge:
+    image: ghcr.io/jessielw/mp4forge:latest
+    platform: linux/amd64
+    container_name: mp4forge-web
+    ports:
+      - "8000:8000"
+    volumes:
+      # mount for persistent config and logs
+      - /SOME_PATH/runtime:/app/runtime
+    environment:
+      - PYTHONUNBUFFERED=1
+    restart: "no"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
 ```
-
-**WIP**
 
 ## Usage
 
