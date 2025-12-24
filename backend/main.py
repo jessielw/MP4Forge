@@ -7,7 +7,6 @@ from uuid import UUID
 
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from iso639 import Language as Iso639Language
 
@@ -615,7 +614,7 @@ async def update_settings(settings: SettingsUpdate):
         Conf.audio_preset_titles = settings.audio_preset_titles
     if settings.subtitle_preset_titles is not None:
         Conf.subtitle_preset_titles = settings.subtitle_preset_titles
-    
+
     Conf.save()
     return {"status": "success", "message": "Settings saved successfully"}
 
