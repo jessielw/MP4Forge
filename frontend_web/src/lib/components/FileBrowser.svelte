@@ -1,12 +1,17 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { toast } from "$lib/stores/toast";
+  import {
+    lastBrowsePath,
+    getDirectoryFromPath,
+  } from "$lib/stores/fileBrowser";
 
   interface Props {
     onFileSelect: (filePath: string) => void;
     fileFilter?: (fileName: string) => boolean;
     title?: string;
     onClose?: () => void;
+    initialPath?: string;
   }
 
   interface BrowseItem {
@@ -28,6 +33,7 @@
     fileFilter,
     title = "Browse Files",
     onClose,
+    initialPath,
   }: Props = $props();
 
   let currentPath = $state("");
@@ -38,7 +44,15 @@
 
   // load initial directory on mount
   onMount(() => {
-    browseDirectory();
+    // determine starting path: initialPath > last used path > default
+    let startPath: string | undefined;
+    if (initialPath) {
+      startPath = getDirectoryFromPath(initialPath) || undefined;
+    } else if ($lastBrowsePath) {
+      startPath = $lastBrowsePath;
+    }
+
+    browseDirectory(startPath);
   });
 
   async function browseDirectory(path?: string) {
@@ -61,6 +75,9 @@
       parentPath = data.parent_path;
       items = data.items;
       basePath = data.base_path;
+
+      // store this path as last used
+      lastBrowsePath.set(currentPath);
     } catch (e) {
       const errorMsg =
         e instanceof Error ? e.message : "Unknown error occurred";

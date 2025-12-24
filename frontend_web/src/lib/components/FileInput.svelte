@@ -50,6 +50,7 @@
   onFileSelect={handleFileSelect}
   {fileFilter}
   title={browserTitle}
+  initialPath={value}
 />
 
 <style>

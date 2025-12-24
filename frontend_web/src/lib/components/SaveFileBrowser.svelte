@@ -1,5 +1,9 @@
 <script lang="ts">
   import { onMount } from "svelte";
+  import {
+    lastBrowsePath,
+    getDirectoryFromPath,
+  } from "$lib/stores/fileBrowser";
 
   interface Props {
     onFileSelect: (filePath: string) => void;
@@ -7,6 +11,7 @@
     title?: string;
     onClose?: () => void;
     defaultFilename?: string;
+    initialPath?: string;
   }
 
   interface BrowseItem {
@@ -29,6 +34,7 @@
     title = "Save File",
     onClose,
     defaultFilename = "output.mp4",
+    initialPath,
   }: Props = $props();
 
   let currentPath = $state("");
@@ -46,7 +52,16 @@
     if (defaultFilename && !filename) {
       filename = defaultFilename;
     }
-    browseDirectory();
+
+    // determine starting path: initialPath > last used path > default
+    let startPath: string | undefined;
+    if (initialPath) {
+      startPath = getDirectoryFromPath(initialPath) || undefined;
+    } else if ($lastBrowsePath) {
+      startPath = $lastBrowsePath;
+    }
+
+    browseDirectory(startPath);
   });
 
   async function browseDirectory(path?: string) {
@@ -69,6 +84,9 @@
       currentPath = data.current_path;
       parentPath = data.parent_path;
       items = data.items;
+
+      // store this path as last used
+      lastBrowsePath.set(currentPath);
 
       // detect path separator from current path (backend always uses native separator)
       pathSeparator = currentPath.includes("\\") ? "\\" : "/";

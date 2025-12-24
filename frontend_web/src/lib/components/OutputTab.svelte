@@ -21,11 +21,19 @@
   import { resetTabsOnAdd } from "$lib/stores/settings";
   import { toast } from "$lib/stores/toast";
   import SaveFileBrowserModal from "./SaveFileBrowserModal.svelte";
+  import { outputTabSetValue } from "$lib/stores/navigation";
 
   let outputPath = $state("");
   let showFileBrowser = $state(false);
   let cancelConfirmIds = $state<Set<string>>(new Set());
   let queueRunning = $state(false);
+
+  // subscribe to outputTabSetValue to update outputPath when video file changes
+  outputTabSetValue.subscribe((value) => {
+    if (value) {
+      outputPath = value;
+    }
+  });
 
   // initialize WebSocket and load jobs on mount
   onMount(() => {
@@ -360,6 +368,7 @@
   defaultExtension=".mp4"
   title="Select Output File"
   defaultFilename={getDefaultFilename()}
+  initialPath={outputPath}
 />
 
 <style>

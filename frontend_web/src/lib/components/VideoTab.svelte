@@ -4,6 +4,8 @@
   import TrackImportDialog from "./TrackImportDialog.svelte";
   import { ApiClient, LogLevel } from "$lib/api";
   import { videoTrack, audioTracks, subtitleTracks } from "$lib/stores/tracks";
+  import { outputTabSetValue } from "$lib/stores/navigation";
+  import { parse, join } from "pathe";
 
   interface MediaInfoRow {
     property: string;
@@ -268,6 +270,15 @@
     ApiClient.logToBackend(`Video file selected: ${filePath}`, LogLevel.DEBUG);
     // auto load MediaInfo on file select
     loadMediaInfo();
+    // update value of outputTabSetValue store
+    if (filePath) {
+      const parsedPath = parse(filePath);
+      filePath = join(
+        parsedPath.dir,
+        `${parsedPath.name}_muxed${parsedPath.ext}`
+      );
+    }
+    outputTabSetValue.set(filePath);
   }
 
   function isVideoFile(fileName: string): boolean {

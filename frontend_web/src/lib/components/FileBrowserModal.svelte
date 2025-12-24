@@ -8,6 +8,7 @@
     onFileSelect: (filePath: string) => void;
     fileFilter?: (fileName: string) => boolean;
     title?: string;
+    initialPath?: string;
   }
 
   let {
@@ -16,6 +17,7 @@
     onFileSelect,
     fileFilter,
     title = "Browse Files",
+    initialPath,
   }: Props = $props();
 
   function handleFileSelect(filePath: string) {
@@ -30,10 +32,10 @@
     onFileSelect={handleFileSelect}
     {fileFilter}
     {title}
+    {initialPath}
     onClose={() => {
       isOpen = false;
       onClose();
     }}
   />
 </Modal>
-

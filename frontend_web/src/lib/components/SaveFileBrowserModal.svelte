@@ -9,6 +9,7 @@
     defaultExtension?: string;
     title?: string;
     defaultFilename?: string;
+    initialPath?: string;
   }
 
   let {
@@ -18,6 +19,7 @@
     defaultExtension = ".mp4",
     title = "Save File",
     defaultFilename = "output.mp4",
+    initialPath,
   }: Props = $props();
 
   function handleFileSelect(filePath: string) {
@@ -33,6 +35,7 @@
     {defaultExtension}
     {title}
     {defaultFilename}
+    {initialPath}
     onClose={() => {
       isOpen = false;
       onClose();
