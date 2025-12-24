@@ -1,4 +1,4 @@
-name: Docker Build and Publish
+name: Docker Build and Publish (WebApp)
 
 on:
   release:
