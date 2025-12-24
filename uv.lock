@@ -175,9 +175,7 @@ wheels = [
 name = "mp4forge"
 version = "2.0.0"
 source = { editable = "." }
-
-[package.optional-dependencies]
-core = [
+dependencies = [
     { name = "autoqpf" },
     { name = "platformdirs" },
     { name = "psutil" },
@@ -189,6 +187,8 @@ core = [
     { name = "tomlkit" },
     { name = "typing-extensions" },
 ]
+
+[package.optional-dependencies]
 desktop = [
     { name = "pymediainfo" },
     { name = "pyside6" },
@@ -205,33 +205,39 @@ dev = [
     { name = "ruff" },
     { name = "uvicorn", extra = ["standard"] },
 ]
+web = [
+    { name = "fastapi" },
+    { name = "uvicorn", extra = ["standard"] },
+]
 
 [package.metadata]
 requires-dist = [
-    { name = "autoqpf", marker = "extra == 'core'", specifier = ">=0.2.5" },
+    { name = "autoqpf", specifier = ">=0.2.5" },
     { name = "debugpy", marker = "extra == 'dev'" },
     { name = "fastapi", marker = "extra == 'dev'", specifier = ">=0.115.0" },
-    { name = "platformdirs", marker = "extra == 'core'" },
-    { name = "psutil", marker = "extra == 'core'" },
+    { name = "fastapi", marker = "extra == 'web'", specifier = ">=0.115.0" },
+    { name = "platformdirs" },
+    { name = "psutil" },
     { name = "pyinstaller", marker = "extra == 'dev'", specifier = ">=6.0.0" },
-    { name = "pymediainfo", marker = "extra == 'core'" },
+    { name = "pymediainfo" },
     { name = "pymediainfo", marker = "extra == 'desktop'" },
     { name = "pyside6", marker = "extra == 'desktop'", specifier = "==6.10.1" },
     { name = "pyside6", marker = "extra == 'dev'", specifier = "==6.10.1" },
-    { name = "python-dotenv", marker = "extra == 'core'" },
-    { name = "python-iso639", marker = "extra == 'core'", specifier = ">=2025.11.11" },
+    { name = "python-dotenv" },
+    { name = "python-iso639", specifier = ">=2025.11.11" },
     { name = "python-iso639", marker = "extra == 'desktop'", specifier = ">=2025.11.11" },
     { name = "qtawesome", marker = "extra == 'desktop'", specifier = ">=1.4.0" },
     { name = "qtawesome", marker = "extra == 'dev'", specifier = ">=1.4.0" },
     { name = "ruff", marker = "extra == 'dev'" },
-    { name = "semver", marker = "extra == 'core'" },
-    { name = "shortuuid", marker = "extra == 'core'" },
-    { name = "tomlkit", marker = "extra == 'core'" },
-    { name = "typing-extensions", marker = "extra == 'core'" },
+    { name = "semver" },
+    { name = "shortuuid" },
+    { name = "tomlkit" },
+    { name = "typing-extensions" },
     { name = "typing-extensions", marker = "extra == 'desktop'" },
     { name = "uvicorn", extras = ["standard"], marker = "extra == 'dev'", specifier = ">=0.31.0" },
+    { name = "uvicorn", extras = ["standard"], marker = "extra == 'web'", specifier = ">=0.31.0" },
 ]
-provides-extras = ["core", "desktop", "dev"]
+provides-extras = ["desktop", "web", "dev"]
 
 [[package]]
 name = "packaging"
