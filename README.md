@@ -114,7 +114,7 @@ services:
 ## Usage
 
 1. **Add tracks**: Use the Video, Audio, Subtitles, and Chapters tabs to add input files
-   - Drag & drop files directly onto input fields
+   - Drag & drop files directly onto input fields _(desktop only)_
    - Use the file browser button
    - For multi-track MP4 audio files, a track selector dialog will appear
 2. **Configure metadata**: Set language, title, default/forced flags, and delay for each track
@@ -148,15 +148,7 @@ By default, configuration is stored in your OS user config directory:
 - **macOS**: `~/Library/Application Support/Mp4Forge/config.toml`
 - **Linux**: `~/.config/Mp4Forge/config.toml`
 
-For portable installations, the config is stored in the `runtime/` folder alongside the executable.
-
-## Roadmap
-
-### Planned Features
-
-- **Docker/Web version**: Web-based interface with Docker deployment for headless servers (coming soon)
-- **Batch processing**: Process multiple files with templates
-- **Video format support**: Direct support for more video codecs
+For portable installations, the config is stored in the `runtime/` folder alongside the executable _(desktop only)_.
 
 ## Development
 
@@ -175,10 +167,20 @@ uv run python build_desktop.py
 
 ### Tech Stack
 
+#### Desktop
+
 - **Backend**: MP4Box (GPAC)
 - **Frontend**: PySide6 (Qt6)
 - **Build**: PyInstaller
 - **Package Manager**: uv
+- **MediaInfo**: pymediainfo for track inspection
+
+#### WebUI
+
+- **Backend**: Python/FastAPI/GPAC
+- **Frontend**: Svelte
+- **Build**: Docker
+- **Package Managers**: uv & node
 - **MediaInfo**: pymediainfo for track inspection
 
 ## Contributing
