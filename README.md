@@ -66,6 +66,23 @@ uv sync --all-extras
 uv run python frontend_desktop/main.py
 ```
 
+### Option 3: Docker (Web Interface)
+
+Run MP4Forge with a web interface using Docker:
+
+```bash
+# Using docker-compose (recommended)
+docker-compose up -d
+
+# Or using the convenience script
+./docker-run.sh  # Linux/macOS
+docker-run.bat   # Windows
+
+# Access the web interface at http://localhost:8000
+```
+
+See [DOCKER.md](DOCKER.md) for detailed Docker documentation.
+
 ## Usage
 
 1. **Add tracks**: Use the Video, Audio, Subtitles, and Chapters tabs to add input files
