@@ -35,15 +35,26 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Set version for metadata
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "release" ]; then
+            echo "version=${{ github.ref_name }}" >> $GITHUB_OUTPUT
+          elif [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ -n "${{ inputs.version }}" ]; then
+            echo "version=${{ inputs.version }}" >> $GITHUB_OUTPUT
+          else
+            echo "version=latest" >> $GITHUB_OUTPUT
+          fi
+
       - name: Extract metadata
         id: meta
         uses: docker/metadata-action@v5
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
-            ${{ github.event_name == 'workflow_dispatch' && inputs.version != '' && format('type=semver,pattern={{version}},value={0}', inputs.version) || 'type=semver,pattern={{version}}' }}
-            ${{ github.event_name == 'workflow_dispatch' && inputs.version != '' && format('type=semver,pattern={{major}}.{{minor}},value={0}', inputs.version) || 'type=semver,pattern={{major}}.{{minor}}' }}
-            ${{ github.event_name == 'workflow_dispatch' && inputs.version != '' && format('type=semver,pattern={{major}},value={0}', inputs.version) || 'type=semver,pattern={{major}}' }}
+            type=semver,pattern={{version}},value=${{ steps.version.outputs.version }}
+            type=semver,pattern={{major}}.{{minor}},value=${{ steps.version.outputs.version }}
+            type=semver,pattern={{major}},value=${{ steps.version.outputs.version }}
             type=raw,value=latest
           flavor: |
             latest=auto
