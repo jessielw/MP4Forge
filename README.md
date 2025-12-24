@@ -68,6 +68,8 @@ uv run python frontend_desktop/main.py
 
 ### Option 3: Docker (Web Interface)
 
+**WIP**
+
 Run MP4Forge with a web interface using Docker:
 
 ```bash
@@ -81,7 +83,7 @@ docker-run.bat   # Windows
 # Access the web interface at http://localhost:8000
 ```
 
-See [DOCKER.md](DOCKER.md) for detailed Docker documentation.
+**WIP**
 
 ## Usage
 
