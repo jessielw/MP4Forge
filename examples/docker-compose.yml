@@ -8,6 +8,9 @@ services:
     volumes:
       # mount for persistent config and logs
       - /SOME_PATH/runtime:/app/runtime
+      # mount volume(s) you may need for input/output files
+      - /SOME_PATH:/data/SOME_PATH
+      - /SOME_PATH2:/data/SOME_PATH2
     environment:
       - PYTHONUNBUFFERED=1
     restart: "no"

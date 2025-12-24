@@ -29,7 +29,6 @@ A modern MP4 muxing tool with a desktop GUI interface, powered by MP4Box.
 - **Queue system**: Build and manage multiple muxing jobs in a queue
 - **Cross-platform**: Available for Windows (8+ x64), macOS, and Linux
 - **Theme support**: Light, dark, and auto themes
-- **Persistent configuration**: Settings stored in OS-appropriate locations (portable mode available)
 - **Quick access titles**: Save and use quick access titles for audio/subtitles
 
 ### Supported Formats
@@ -40,7 +39,7 @@ A modern MP4 muxing tool with a desktop GUI interface, powered by MP4Box.
 **Chapters**: OGM, XML, MP4 (extracted from existing files)  
 **Output**: MP4 container only
 
-## Requirements
+## Desktop Application Requirements
 
 **MP4Box** must be installed and available in your system PATH, or configured in the application settings.
 
@@ -49,6 +48,10 @@ A modern MP4 muxing tool with a desktop GUI interface, powered by MP4Box.
   - Windows: `winget install GPAC.GPAC` or `choco install gpac`
   - macOS: `brew install gpac`
   - Linux: `apt install gpac` or `yum install gpac`
+
+## Docker Application Requirements
+
+Everything is self contained and included that you would need.
 
 ## Installation
 
@@ -94,6 +97,9 @@ services:
     volumes:
       # mount for persistent config and logs
       - /SOME_PATH/runtime:/app/runtime
+      # mount volume(s) you may need for input/output files
+      - /SOME_PATH:/data/SOME_PATH
+      - /SOME_PATH2:/data/SOME_PATH2
     environment:
       - PYTHONUNBUFFERED=1
     restart: "no"
