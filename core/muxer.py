@@ -166,8 +166,11 @@ class VideoMuxer:
             # add video track
             if job.video:
                 video_opts = "#video"
+                # always add :lang= to explicitly set or clear language
                 if job.video.language:
                     video_opts += f":lang={job.video.language.part3}"
+                else:
+                    video_opts += ":lang="
                 video_opts += (
                     f":name={job.video.title}" if job.video.title else ":name="
                 )
@@ -187,8 +190,11 @@ class VideoMuxer:
                 else:
                     audio_opts = "#audio"
 
+                # always add :lang= to explicitly set or clear language
                 if audio.language:
                     audio_opts += f":lang={audio.language.part3}"
+                else:
+                    audio_opts += ":lang="
                 audio_opts += f":name={audio.title}" if audio.title else ":name="
                 if audio.delay_ms != 0:
                     audio_opts += f":delay={audio.delay_ms}"
@@ -212,8 +218,11 @@ class VideoMuxer:
                     track_selector = "#text"  # default to first text track
 
                 subtitle_opts = track_selector
+                # always add :lang= to explicitly set or clear language
                 if subtitle.language:
                     subtitle_opts += f":lang={subtitle.language.part3}"
+                else:
+                    subtitle_opts += ":lang="
                 subtitle_opts += (
                     f":name={subtitle.title}" if subtitle.title else ":name="
                 )

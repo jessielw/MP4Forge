@@ -145,6 +145,11 @@ class VideoTab(BaseTab[VideoState]):
                 index = self.lang_combo.findText(full_lang)
                 if index != -1:
                     self.lang_combo.setCurrentIndex(index)
+                else:
+                    # language not found in combo, reset to empty
+                    self.lang_combo.setCurrentIndex(0)
+            else:
+                self.lang_combo.setCurrentIndex(0)
         else:
             # fallback: try to detect language from filename
             file_path = Path(self.input_entry.toPlainText().strip())
@@ -154,6 +159,9 @@ class VideoTab(BaseTab[VideoState]):
                 index = self.lang_combo.findText(full_lang)
                 if index != -1:
                     self.lang_combo.setCurrentIndex(index)
+                else:
+                    # detected language not found in combo, reset to empty
+                    self.lang_combo.setCurrentIndex(0)
             else:
                 self.lang_combo.setCurrentIndex(0)
 
