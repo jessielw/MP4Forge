@@ -189,7 +189,9 @@ class SubtitleTab(BaseTab[SubtitleState]):
         else:
             # single track or non-MP4 - use first track
             track = media_info.text_tracks[0]
-            self.selected_track_id = track.track_id or 1
+            # only store track_id for container formats; plain subtitle files
+            # (.srt, .idx, .ttxt) don't use a track selector with MP4Box
+            self.selected_track_id = (track.track_id or 1) if is_mp4 else None
 
         # populate tree with selected track info
         for key, value in track.to_data().items():

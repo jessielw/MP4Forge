@@ -172,13 +172,12 @@ class VideoMuxer:
                 else:
                     video_opts += ":lang="
                 video_opts += (
-                    f":name={job.video.title}" if job.video.title else ":name="
+                    f":name={self._escape_name(job.video.title)}"
+                    if job.video.title
+                    else ":name="
                 )
-                video_opts += (
-                    f":delay={job.video.delay_ms}"
-                    if job.video.delay_ms != 0
-                    else ":delay="
-                )
+                if job.video.delay_ms != 0:
+                    video_opts += f":delay={job.video.delay_ms}"
                 cmd.extend(["-add", f"{job.video.input_file}{video_opts}"])
 
             # add audio tracks
@@ -195,7 +194,11 @@ class VideoMuxer:
                     audio_opts += f":lang={audio.language.part3}"
                 else:
                     audio_opts += ":lang="
-                audio_opts += f":name={audio.title}" if audio.title else ":name="
+                audio_opts += (
+                    f":name={self._escape_name(audio.title)}"
+                    if audio.title
+                    else ":name="
+                )
                 if audio.delay_ms != 0:
                     audio_opts += f":delay={audio.delay_ms}"
 
@@ -211,20 +214,29 @@ class VideoMuxer:
             # add subtitle tracks with default/forced logic
             subtitle_defaults_set = any(sub.default for sub in job.subtitle_tracks)
             for subtitle in job.subtitle_tracks:
-                # determine track selector (for multi-track MP4 inputs)
-                if subtitle.track_id is not None:
-                    track_selector = f"#{subtitle.track_id}"
+                subtitle_ext = subtitle.input_file.suffix.lower()
+                is_container_subtitle = subtitle_ext in (".mp4", ".m4v")
+                if is_container_subtitle:
+                    # container: use track selector
+                    if subtitle.track_id is not None:
+                        subtitle_opts = f"#{subtitle.track_id}"
+                    else:
+                        subtitle_opts = "#text"
                 else:
-                    track_selector = "#text"  # default to first text track
-
-                subtitle_opts = track_selector
+                    # plain subtitle file: skip track selector but add a fmt hint so
+                    # MP4Box skips content probing (which can misidentify e.g. SRT as MPEG-2 TS)
+                    _fmt_map = {".srt": "srt", ".ttxt": "ttxt"}
+                    _fmt = _fmt_map.get(subtitle_ext)
+                    subtitle_opts = f":fmt={_fmt}" if _fmt else ""
                 # always add :lang= to explicitly set or clear language
                 if subtitle.language:
                     subtitle_opts += f":lang={subtitle.language.part3}"
                 else:
                     subtitle_opts += ":lang="
                 subtitle_opts += (
-                    f":name={subtitle.title}" if subtitle.title else ":name="
+                    f":name={self._escape_name(subtitle.title)}"
+                    if subtitle.title
+                    else ":name="
                 )
 
                 # default flag logic
@@ -434,3 +446,8 @@ class VideoMuxer:
     def _notify_error(self, error: str) -> None:
         if self.progress_callback:
             self.progress_callback.on_error(error)
+
+    @staticmethod
+    def _escape_name(name: str) -> str:
+        """Escape colons in track names - MP4Box uses ':' as its option separator."""
+        return name.replace(":", "\\:")
