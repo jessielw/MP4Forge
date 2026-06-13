@@ -23,12 +23,12 @@ FROM gpac/ubuntu:latest
 
 # install Python and pip
 RUN apt-get update && apt-get install -y \
-    python3.12 \
+    python3 \
     python3-pip \
-    python3.12-venv \
+    python3-venv \
     curl \
     && rm -rf /var/lib/apt/lists/* \
-    && ln -s /usr/bin/python3.12 /usr/bin/python
+    && ln -sf /usr/bin/python3 /usr/bin/python
 
 # verify mp4box is available 
 RUN MP4Box -version
@@ -37,7 +37,7 @@ RUN MP4Box -version
 WORKDIR /app
 
 # create virtual environment
-RUN python -m venv /opt/venv
+RUN python3 -m venv /opt/venv
 
 # add venv to PATH so we use it by default
 ENV PATH="/opt/venv/bin:$PATH"
