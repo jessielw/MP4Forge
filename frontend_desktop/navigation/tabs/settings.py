@@ -170,7 +170,9 @@ class GeneralSettingsTab(QWidget):
     def _browse_mp4box(self) -> None:
         """Browse for MP4Box executable"""
         is_windows = platform.system() == "Windows"
-        file_filter = "Mp4Box (mp4box.exe)" if is_windows else "Mp4Box (mp4box)"
+        file_filter = (
+            "Mp4Box (mp4box*.exe)" if is_windows else "Mp4Box (mp4box*)"
+        ) + ";;All Files (*)"
 
         file_path, _ = QFileDialog.getOpenFileName(
             self,
