@@ -69,11 +69,18 @@ jobs:
       - name: Build desktop app
         run: uv run python build_desktop.py
 
+      - name: Package app bundle
+        run: |
+          ditto -c -k --sequesterRsrc --keepParent pyinstaller_build/bundled_mode/Mp4Forge.app Mp4Forge-macOS-ARM64.zip
+          mkdir packaged-app
+          ditto -x -k Mp4Forge-macOS-ARM64.zip packaged-app
+          codesign --verify --deep --strict --verbose=2 packaged-app/Mp4Forge.app
+
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: Mp4Forge-macOS-ARM64
-          path: pyinstaller_build/bundled_mode/
+          path: Mp4Forge-macOS-ARM64.zip
           retention-days: 90
 
   build-macos-intel:
@@ -98,11 +105,18 @@ jobs:
       - name: Build desktop app
         run: uv run python build_desktop.py
 
+      - name: Package app bundle
+        run: |
+          ditto -c -k --sequesterRsrc --keepParent pyinstaller_build/bundled_mode/Mp4Forge.app Mp4Forge-macOS-Intel.zip
+          mkdir packaged-app
+          ditto -x -k Mp4Forge-macOS-Intel.zip packaged-app
+          codesign --verify --deep --strict --verbose=2 packaged-app/Mp4Forge.app
+
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: Mp4Forge-macOS-Intel
-          path: pyinstaller_build/bundled_mode/
+          path: Mp4Forge-macOS-Intel.zip
           retention-days: 90
 
   build-linux:
@@ -188,28 +202,19 @@ jobs:
             echo "✓ Created Windows archive"
           fi
 
-          # macOS ARM64 .app bundle
-          if [ -d "dist/macos-arm64" ]; then
-            cd dist/macos-arm64
-            if [ -d "Mp4Forge.app" ]; then
-              zip -r ../../archives/Mp4Forge-macOS-ARM64.zip Mp4Forge.app
-              echo "✓ Created macOS ARM64 archive"
-            else
-              echo "⚠ Mp4Forge.app not found in dist/macos-arm64"
-            fi
-            cd ../..
+          # macOS bundles are archived on macOS so symlinks and metadata survive.
+          if [ -f "dist/macos-arm64/Mp4Forge-macOS-ARM64.zip" ]; then
+            cp dist/macos-arm64/Mp4Forge-macOS-ARM64.zip archives/
+            echo "✓ Collected macOS ARM64 archive"
+          else
+            echo "⚠ macOS ARM64 archive not found"
           fi
 
-          # macOS Intel .app bundle
-          if [ -d "dist/macos-intel" ]; then
-            cd dist/macos-intel
-            if [ -d "Mp4Forge.app" ]; then
-              zip -r ../../archives/Mp4Forge-macOS-Intel.zip Mp4Forge.app
-              echo "✓ Created macOS Intel archive"
-            else
-              echo "⚠ Mp4Forge.app not found in dist/macos-intel"
-            fi
-            cd ../..
+          if [ -f "dist/macos-intel/Mp4Forge-macOS-Intel.zip" ]; then
+            cp dist/macos-intel/Mp4Forge-macOS-Intel.zip archives/
+            echo "✓ Collected macOS Intel archive"
+          else
+            echo "⚠ macOS Intel archive not found"
           fi
 
           # Linux

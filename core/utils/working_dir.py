@@ -13,9 +13,10 @@ def _get_working_directories() -> tuple[Path, Path, bool]:
         (Path, Path, bool): Current working directory, runtime directory, frozen.
     """
     # we're in a pyinstaller bundle
-    if getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS"):
+    mei_pass = getattr(sys, "_MEIPASS")
+    if getattr(sys, "frozen", False) and mei_pass:
         path = Path(sys.executable).parent
-        return path, path / "bundle" / "runtime", True
+        return path, Path(mei_pass) / "runtime", True
 
     # we're running from a *.py file
     else:
