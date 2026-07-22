@@ -1,6 +1,6 @@
 {
   "name": "mp4forge-web",
-  "version": "2.1.2",
+  "version": "2.1.4",
   "private": true,
   "scripts": {
     "dev": "vite dev",
